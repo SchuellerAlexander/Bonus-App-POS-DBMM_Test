@@ -26,7 +26,12 @@ public class DashboardController {
         this.objectMapper = objectMapper;
     }
 
-    @GetMapping({"/", "/dashboard"})
+    @GetMapping("/")
+    public String home() {
+        return "redirect:/dashboard";
+    }
+
+    @GetMapping("/dashboard")
     public String dashboard(@RequestParam(name = "accountId", defaultValue = "1") Long accountId,
                             Model model,
                             HttpServletRequest request) {
