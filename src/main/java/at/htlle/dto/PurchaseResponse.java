@@ -10,7 +10,7 @@ public record PurchaseResponse(
         String currency,
         Instant purchasedAt,
         Long accountId,
-        Long branchId,
+        Long restaurantId,
         Long ledgerEntryId,
         Long points,
         Long balanceAfter) {

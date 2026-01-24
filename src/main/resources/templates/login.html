@@ -1,60 +1,92 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout('Login', ~{::section})}">
-<section class="space-y-8">
-    <div class="grid gap-6 lg:grid-cols-2">
-        <div class="card p-6 reveal">
-            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Login</div>
-            <div class="font-display text-2xl">Sign in to your account</div>
-            <p class="mt-2 text-sm text-ink/60">Use your username and password to see your points.</p>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: "#1c2b28"
+                    },
+                    fontFamily: {
+                        display: ["Fraunces", "serif"],
+                        sans: ["Space Grotesk", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body class="app-bg text-ink">
+<main class="min-h-screen flex items-center">
+    <div class="mx-auto max-w-5xl px-6 py-16">
+        <section class="space-y-8">
+            <div class="grid gap-6 lg:grid-cols-2">
+                <div class="card p-6 reveal">
+                    <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Login</div>
+                    <div class="font-display text-2xl">Sign in to your account</div>
+                    <p class="mt-2 text-sm text-ink/60">Use your username and password to see your points.</p>
 
-            <form class="mt-6 space-y-4" action="/login" method="post" data-loading>
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="login-username">Username</label>
-                    <input class="input" id="login-username" name="username" type="text" required>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="login-password">Password</label>
-                    <input class="input" id="login-password" name="password" type="password" required>
-                </div>
-                <button class="btn-primary" type="submit">Login</button>
-            </form>
+                    <form class="mt-6 space-y-4" action="/login" method="post" data-loading>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="login-username">Username</label>
+                            <input class="input" id="login-username" name="username" type="text" required>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="login-password">Password</label>
+                            <input class="input" id="login-password" name="password" type="password" required>
+                        </div>
+                        <button class="btn-primary" type="submit">Login</button>
+                    </form>
 
-            <div class="mt-4 text-sm text-red-700" th:if="${loginError != null}" th:text="${loginError}">Error</div>
-        </div>
+                    <div class="mt-4 text-sm text-red-700" th:if="${loginError != null}" th:text="${loginError}">Error</div>
+                </div>
 
-        <div class="card p-6 reveal">
-            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Create Account</div>
-            <div class="font-display text-2xl">New customer signup</div>
-            <p class="mt-2 text-sm text-ink/60">Create a customer account and start collecting points.</p>
+                <div class="card p-6 reveal">
+                    <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Create Account</div>
+                    <div class="font-display text-2xl">New customer signup</div>
+                    <p class="mt-2 text-sm text-ink/60">Create a customer account and start collecting points.</p>
 
-            <form class="mt-6 grid gap-4 md:grid-cols-2" action="/signup" method="post" data-loading>
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="signup-first">First Name</label>
-                    <input class="input" id="signup-first" name="firstName" type="text" required>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="signup-last">Last Name</label>
-                    <input class="input" id="signup-last" name="lastName" type="text" required>
-                </div>
-                <div class="flex flex-col gap-2 md:col-span-2">
-                    <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="signup-email">Email</label>
-                    <input class="input" id="signup-email" name="email" type="email" required>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="signup-username">Username</label>
-                    <input class="input" id="signup-username" name="username" type="text" required>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="signup-password">Password</label>
-                    <input class="input" id="signup-password" name="password" type="password" required>
-                </div>
-                <div class="md:col-span-2">
-                    <button class="btn-secondary" type="submit">Create Account</button>
-                </div>
-            </form>
+                    <form class="mt-6 grid gap-4 md:grid-cols-2" action="/signup" method="post" data-loading>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="signup-first">First Name</label>
+                            <input class="input" id="signup-first" name="firstName" type="text" required>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="signup-last">Last Name</label>
+                            <input class="input" id="signup-last" name="lastName" type="text" required>
+                        </div>
+                        <div class="flex flex-col gap-2 md:col-span-2">
+                            <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="signup-email">Email</label>
+                            <input class="input" id="signup-email" name="email" type="email" required>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="signup-username">Username</label>
+                            <input class="input" id="signup-username" name="username" type="text" required>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="signup-password">Password</label>
+                            <input class="input" id="signup-password" name="password" type="password" required>
+                        </div>
+                        <div class="md:col-span-2">
+                            <button class="btn-secondary" type="submit">Create Account</button>
+                        </div>
+                    </form>
 
-            <div class="mt-4 text-sm text-red-700" th:if="${signupError != null}" th:text="${signupError}">Error</div>
-        </div>
+                    <div class="mt-4 text-sm text-red-700" th:if="${signupError != null}" th:text="${signupError}">Error</div>
+                </div>
+            </div>
+        </section>
     </div>
-</section>
+</main>
+<script src="/app.js"></script>
+</body>
 </html>

@@ -6,6 +6,6 @@ import jakarta.validation.constraints.Size;
 public record RedemptionRequest(
         @NotNull Long accountId,
         @NotNull Long rewardId,
-        @NotNull Long branchId,
+        @NotNull Long restaurantId,
         @Size(max = 255) String notes) {
 }

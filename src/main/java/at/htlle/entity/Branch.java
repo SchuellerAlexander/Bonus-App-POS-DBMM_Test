@@ -56,6 +56,9 @@ public class Branch {
     @Column(name = "postal_code", length = 10)
     private String postalCode;
 
+    @Column(name = "default_branch", nullable = false)
+    private boolean defaultBranch = false;
+
     public Long getId() {
         return id;
     }
@@ -114,5 +117,13 @@ public class Branch {
 
     public void setPostalCode(String postalCode) {
         this.postalCode = postalCode;
+    }
+
+    public boolean isDefaultBranch() {
+        return defaultBranch;
+    }
+
+    public void setDefaultBranch(boolean defaultBranch) {
+        this.defaultBranch = defaultBranch;
     }
 }

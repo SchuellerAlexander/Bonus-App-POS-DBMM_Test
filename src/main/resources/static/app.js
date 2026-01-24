@@ -160,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const safeValue = (value) => (value === null || value === undefined || value === "" ? "-" : value);
             const rows = [
               { label: "Account Id", value: safeValue(data.accountId) },
-              { label: "Branch Id", value: safeValue(data.branchId) },
+              { label: "Restaurant Id", value: safeValue(data.restaurantId) },
               { label: "Purchase Number", value: safeValue(data.purchaseNumber) },
               { label: "Total Amount", value: safeValue(data.totalAmount) },
               { label: "Currency", value: safeValue(data.currency) },

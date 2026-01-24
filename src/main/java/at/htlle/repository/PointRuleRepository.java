@@ -12,6 +12,8 @@ public interface PointRuleRepository extends JpaRepository<PointRule, Long> {
 
     Optional<PointRule> findByRestaurantIdAndName(Long restaurantId, String name);
 
+    List<PointRule> findByRestaurantId(Long restaurantId);
+
     @Query("select pr from PointRule pr where pr.restaurant.id = :restaurantId and pr.active = true and (pr.validFrom is null or pr.validFrom <= :referenceDate) and (pr.validUntil is null or pr.validUntil >= :referenceDate)")
     List<PointRule> findActiveRulesForDate(@Param("restaurantId") Long restaurantId, @Param("referenceDate") LocalDate referenceDate);
 }

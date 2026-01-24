@@ -1,13 +1,18 @@
 package at.htlle.controller;
 
+import at.htlle.dto.AccountResponse;
 import at.htlle.dto.ErrorResponse;
 import at.htlle.dto.PurchaseRequest;
 import at.htlle.dto.PurchaseResponse;
+import at.htlle.dto.RestaurantSummary;
 import at.htlle.util.SessionAccountResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Controller;
@@ -36,21 +41,19 @@ public class PurchaseController {
     }
 
     @GetMapping("/purchase")
-    public String purchaseForm(@RequestParam(name = "branchId", required = false) Long branchId,
+    public String purchaseForm(@RequestParam(name = "restaurantId", required = false) Long restaurantId,
                                Model model,
                                HttpServletRequest request) {
         Long accountId = sessionAccountResolver.getAccountId(request);
         if (accountId == null) {
             return "redirect:/login";
         }
-        model.addAttribute("accountId", accountId);
-        model.addAttribute("branchId", branchId != null ? branchId : 1L);
-        model.addAttribute("currency", "EUR");
+        loadPurchaseData(accountId, restaurantId, model, request);
         return "purchase";
     }
 
     @PostMapping("/purchase")
-    public String createPurchase(@RequestParam("branchId") Long branchId,
+    public String createPurchase(@RequestParam("restaurantId") Long restaurantId,
                                  @RequestParam("purchaseNumber") String purchaseNumber,
                                  @RequestParam("totalAmount") BigDecimal totalAmount,
                                  @RequestParam(name = "currency", defaultValue = "EUR") String currency,
@@ -65,7 +68,7 @@ public class PurchaseController {
         String normalizedCurrency = currency.trim().toUpperCase(Locale.ROOT);
         PurchaseRequest payload = new PurchaseRequest(
                 accountId,
-                branchId,
+                restaurantId,
                 purchaseNumber,
                 totalAmount,
                 normalizedCurrency,
@@ -74,8 +77,7 @@ public class PurchaseController {
                 description,
                 null);
 
-        model.addAttribute("accountId", accountId);
-        model.addAttribute("branchId", branchId);
+        loadPurchaseData(accountId, restaurantId, model, request);
         model.addAttribute("currency", normalizedCurrency);
 
         String baseUrl = baseUrl(request);
@@ -91,6 +93,62 @@ public class PurchaseController {
             model.addAttribute("apiError", fallbackError("Failed to create purchase", request.getRequestURI()));
         }
         return "purchase";
+    }
+
+    private void loadPurchaseData(Long accountId, Long restaurantId, Model model, HttpServletRequest request) {
+        model.addAttribute("accountId", accountId);
+        String baseUrl = baseUrl(request);
+        try {
+            AccountResponse account = restTemplate.getForObject(
+                    baseUrl + "/api/accounts/{id}?includeLedger=false",
+                    AccountResponse.class,
+                    accountId);
+            model.addAttribute("account", account);
+            if (restaurantId == null && account != null) {
+                restaurantId = account.restaurantId();
+            }
+        } catch (HttpStatusCodeException ex) {
+            model.addAttribute("apiError", parseError(ex, request));
+        } catch (RestClientException ex) {
+            model.addAttribute("apiError", fallbackError("Failed to load account", request.getRequestURI()));
+        }
+
+        List<RestaurantSummary> restaurants = fetchRestaurants(baseUrl);
+        model.addAttribute("restaurants", restaurants);
+
+        if (restaurantId == null && restaurants.size() == 1) {
+            restaurantId = restaurants.get(0).id();
+        }
+        model.addAttribute("selectedRestaurantId", restaurantId);
+        model.addAttribute("currency", resolveCurrency(restaurants, restaurantId, "EUR"));
+    }
+
+    private List<RestaurantSummary> fetchRestaurants(String baseUrl) {
+        try {
+            RestaurantSummary[] response = restTemplate.getForObject(
+                    baseUrl + "/api/restaurants",
+                    RestaurantSummary[].class);
+            if (response == null) {
+                return List.of();
+            }
+            return Arrays.stream(response)
+                    .sorted(Comparator.comparing(RestaurantSummary::name, Comparator.nullsLast(String::compareToIgnoreCase)))
+                    .toList();
+        } catch (RestClientException ex) {
+            return List.of();
+        }
+    }
+
+    private String resolveCurrency(List<RestaurantSummary> restaurants, Long restaurantId, String fallback) {
+        if (restaurantId == null) {
+            return fallback;
+        }
+        return restaurants.stream()
+                .filter(restaurant -> restaurant.id().equals(restaurantId))
+                .map(RestaurantSummary::defaultCurrency)
+                .filter(value -> value != null && !value.isBlank())
+                .findFirst()
+                .orElse(fallback);
     }
 
     private String baseUrl(HttpServletRequest request) {

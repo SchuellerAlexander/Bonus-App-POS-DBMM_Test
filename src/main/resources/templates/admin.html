@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout('Admin', ~{::section})}">
+<section class="space-y-10">
+    <div class="card p-6 reveal">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Admin</div>
+                <div class="font-display text-2xl">Admin Tools</div>
+                <p class="mt-2 text-sm text-ink/60">Demo-only admin for managing restaurants, branches, rules, and rewards.</p>
+            </div>
+            <form action="/admin/logout" method="post">
+                <button class="btn-secondary" type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card p-6 reveal space-y-6">
+        <div class="flex flex-col gap-2">
+            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Restaurants</div>
+            <div class="font-display text-xl">Manage Restaurants</div>
+        </div>
+
+        <div class="overflow-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                <tr class="text-left text-ink/60 uppercase text-xs tracking-[0.2em]">
+                    <th class="py-2 pr-4">Name</th>
+                    <th class="py-2 pr-4">Code</th>
+                    <th class="py-2 pr-4">Currency</th>
+                    <th class="py-2 pr-4">Active</th>
+                    <th class="py-2 pr-4">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="restaurant : ${restaurants}" class="border-t border-ink/10">
+                    <td class="py-3 pr-4">
+                        <input class="input" type="text" name="name"
+                               th:attr="form='restaurant-' + ${restaurant.id}"
+                               th:value="${restaurant.name}">
+                    </td>
+                    <td class="py-3 pr-4">
+                        <input class="input" type="text" name="code"
+                               th:attr="form='restaurant-' + ${restaurant.id}"
+                               th:value="${restaurant.code}">
+                    </td>
+                    <td class="py-3 pr-4">
+                        <input class="input" type="text" name="defaultCurrency"
+                               th:attr="form='restaurant-' + ${restaurant.id}"
+                               th:value="${restaurant.defaultCurrency}">
+                    </td>
+                    <td class="py-3 pr-4">
+                        <input type="checkbox" name="active"
+                               th:attr="form='restaurant-' + ${restaurant.id}"
+                               th:checked="${restaurant.active}">
+                    </td>
+                    <td class="py-3 pr-4">
+                        <form th:id="'restaurant-' + ${restaurant.id}"
+                              th:action="@{/admin/restaurants/{id}/update(id=${restaurant.id})}"
+                              method="post" class="flex items-center gap-2">
+                            <button class="btn-primary" type="submit">Save</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <form class="grid gap-4 md:grid-cols-4" action="/admin/restaurants/create" method="post">
+            <input class="input" name="name" placeholder="Restaurant name" required>
+            <input class="input" name="code" placeholder="Code" required>
+            <input class="input" name="defaultCurrency" placeholder="Currency (EUR)" value="EUR" required>
+            <div class="flex items-center gap-3">
+                <label class="text-sm text-ink/60 flex items-center gap-2">
+                    <input type="checkbox" name="active" checked>
+                    Active
+                </label>
+                <button class="btn-secondary" type="submit">Add</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card p-6 reveal space-y-6">
+        <div>
+            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Point Rules</div>
+            <div class="font-display text-xl">Points per Euro</div>
+        </div>
+
+        <div class="grid gap-4 lg:grid-cols-2">
+            <div class="card p-4 border border-ink/10" th:each="restaurant : ${restaurants}">
+                <form class="space-y-3" action="/admin/points-rules/set" method="post">
+                    <input type="hidden" name="restaurantId" th:value="${restaurant.id}">
+                    <div class="font-semibold" th:text="${restaurant.name}">Restaurant</div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs uppercase tracking-[0.2em] text-ink/60">Points per Euro</label>
+                        <input class="input" name="pointsPerEuro" type="number" min="0" step="0.01"
+                               th:value="${defaultRules[restaurant.id] != null ? defaultRules[restaurant.id].multiplier : 1}">
+                    </div>
+                    <label class="text-sm text-ink/60 flex items-center gap-2">
+                        <input type="checkbox" name="active"
+                               th:checked="${defaultRules[restaurant.id] != null ? defaultRules[restaurant.id].active : true}">
+                        Active rule
+                    </label>
+                    <button class="btn-secondary" type="submit">Save Rule</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="card p-6 reveal space-y-6">
+        <div>
+            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Branches</div>
+            <div class="font-display text-xl">Manage Branches</div>
+        </div>
+
+        <div class="overflow-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                <tr class="text-left text-ink/60 uppercase text-xs tracking-[0.2em]">
+                    <th class="py-2 pr-4">Restaurant</th>
+                    <th class="py-2 pr-4">Branch Code</th>
+                    <th class="py-2 pr-4">Name</th>
+                    <th class="py-2 pr-4">Default</th>
+                    <th class="py-2 pr-4">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="branch : ${branches}" class="border-t border-ink/10">
+                    <td class="py-3 pr-4">
+                        <select class="input" name="restaurantId" th:attr="form='branch-' + ${branch.id}">
+                            <option th:each="restaurant : ${restaurants}"
+                                    th:value="${restaurant.id}"
+                                    th:selected="${restaurant.id == branch.restaurant.id}"
+                                    th:text="${restaurant.name}">Restaurant</option>
+                        </select>
+                    </td>
+                    <td class="py-3 pr-4">
+                        <input class="input" name="branchCode" th:attr="form='branch-' + ${branch.id}"
+                               th:value="${branch.branchCode}">
+                    </td>
+                    <td class="py-3 pr-4">
+                        <input class="input" name="name" th:attr="form='branch-' + ${branch.id}"
+                               th:value="${branch.name}">
+                    </td>
+                    <td class="py-3 pr-4">
+                        <input type="checkbox" name="defaultBranch" th:attr="form='branch-' + ${branch.id}"
+                               th:checked="${branch.defaultBranch}">
+                    </td>
+                    <td class="py-3 pr-4">
+                        <form th:id="'branch-' + ${branch.id}"
+                              th:action="@{/admin/branches/{id}/update(id=${branch.id})}"
+                              method="post" class="flex gap-2 items-center">
+                            <button class="btn-primary" type="submit">Save</button>
+                        </form>
+                        <form th:action="@{/admin/branches/{id}/default(id=${branch.id})}" method="post" class="mt-2">
+                            <button class="btn-secondary" type="submit">Set Default</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <form class="grid gap-4 md:grid-cols-4" action="/admin/branches/create" method="post">
+            <select class="input" name="restaurantId" required>
+                <option value="" disabled selected>Select restaurant</option>
+                <option th:each="restaurant : ${restaurants}" th:value="${restaurant.id}" th:text="${restaurant.name}">Restaurant</option>
+            </select>
+            <input class="input" name="branchCode" placeholder="Branch code" required>
+            <input class="input" name="name" placeholder="Branch name" required>
+            <div class="flex items-center gap-3">
+                <label class="text-sm text-ink/60 flex items-center gap-2">
+                    <input type="checkbox" name="defaultBranch">
+                    Default
+                </label>
+                <button class="btn-secondary" type="submit">Add</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card p-6 reveal space-y-6">
+        <div>
+            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Rewards</div>
+            <div class="font-display text-xl">Manage Rewards</div>
+        </div>
+
+        <div class="overflow-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                <tr class="text-left text-ink/60 uppercase text-xs tracking-[0.2em]">
+                    <th class="py-2 pr-4">Restaurant</th>
+                    <th class="py-2 pr-4">Reward Code</th>
+                    <th class="py-2 pr-4">Name</th>
+                    <th class="py-2 pr-4">Description</th>
+                    <th class="py-2 pr-4">Points</th>
+                    <th class="py-2 pr-4">Active</th>
+                    <th class="py-2 pr-4">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="reward : ${rewards}" class="border-t border-ink/10">
+                    <td class="py-3 pr-4">
+                        <select class="input" name="restaurantId" th:attr="form='reward-' + ${reward.id}">
+                            <option th:each="restaurant : ${restaurants}"
+                                    th:value="${restaurant.id}"
+                                    th:selected="${restaurant.id == reward.restaurant.id}"
+                                    th:text="${restaurant.name}">Restaurant</option>
+                        </select>
+                    </td>
+                    <td class="py-3 pr-4">
+                        <input class="input" name="rewardCode" th:attr="form='reward-' + ${reward.id}"
+                               th:value="${reward.rewardCode}">
+                    </td>
+                    <td class="py-3 pr-4">
+                        <input class="input" name="name" th:attr="form='reward-' + ${reward.id}" th:value="${reward.name}">
+                    </td>
+                    <td class="py-3 pr-4">
+                        <input class="input" name="description" th:attr="form='reward-' + ${reward.id}"
+                               th:value="${reward.description}">
+                    </td>
+                    <td class="py-3 pr-4">
+                        <input class="input" name="costPoints" type="number" min="0"
+                               th:attr="form='reward-' + ${reward.id}"
+                               th:value="${reward.costPoints}">
+                    </td>
+                    <td class="py-3 pr-4">
+                        <input type="checkbox" name="active" th:attr="form='reward-' + ${reward.id}"
+                               th:checked="${reward.active}">
+                    </td>
+                    <td class="py-3 pr-4">
+                        <form th:id="'reward-' + ${reward.id}"
+                              th:action="@{/admin/rewards/{id}/update(id=${reward.id})}"
+                              method="post">
+                            <button class="btn-primary" type="submit">Save</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <form class="grid gap-4 md:grid-cols-6" action="/admin/rewards/create" method="post">
+            <select class="input md:col-span-2" name="restaurantId" required>
+                <option value="" disabled selected>Select restaurant</option>
+                <option th:each="restaurant : ${restaurants}" th:value="${restaurant.id}" th:text="${restaurant.name}">Restaurant</option>
+            </select>
+            <input class="input" name="rewardCode" placeholder="Reward code" required>
+            <input class="input" name="name" placeholder="Reward name" required>
+            <input class="input" name="description" placeholder="Description" required>
+            <div class="flex items-center gap-3">
+                <input class="input" name="costPoints" type="number" min="0" placeholder="Points" required>
+                <label class="text-sm text-ink/60 flex items-center gap-2">
+                    <input type="checkbox" name="active" checked>
+                    Active
+                </label>
+                <button class="btn-secondary" type="submit">Add</button>
+            </div>
+        </form>
+    </div>
+</section>
+</html>

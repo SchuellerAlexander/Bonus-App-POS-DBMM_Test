@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 public record PurchaseDetailsResponse(
         Long accountId,
-        Long branchId,
+        Long restaurantId,
         String purchaseNumber,
         BigDecimal totalAmount,
         String currency,

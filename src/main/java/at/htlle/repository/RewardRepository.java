@@ -10,4 +10,6 @@ public interface RewardRepository extends JpaRepository<Reward, Long> {
     Optional<Reward> findByRestaurantIdAndRewardCode(Long restaurantId, String rewardCode);
 
     List<Reward> findByRestaurantIdAndActiveTrue(Long restaurantId);
+
+    List<Reward> findByRestaurantId(Long restaurantId);
 }

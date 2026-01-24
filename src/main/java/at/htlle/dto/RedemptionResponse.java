@@ -7,7 +7,7 @@ public record RedemptionResponse(
         Long redemptionId,
         Long accountId,
         Long rewardId,
-        Long branchId,
+        Long restaurantId,
         Long ledgerEntryId,
         Long pointsSpent,
         Long balanceAfter,
