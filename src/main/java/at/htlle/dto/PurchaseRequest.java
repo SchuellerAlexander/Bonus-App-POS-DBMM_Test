@@ -12,7 +12,7 @@ import java.time.Instant;
 
 public record PurchaseRequest(
         @NotNull Long accountId,
-        @NotNull Long branchId,
+        @NotNull Long restaurantId,
         @NotBlank @Size(max = 40) String purchaseNumber,
         @NotNull @Positive @Digits(integer = 12, fraction = 2) BigDecimal totalAmount,
         @NotBlank @Size(min = 3, max = 3) @Pattern(regexp = "^[A-Za-z]{3}$") String currency,

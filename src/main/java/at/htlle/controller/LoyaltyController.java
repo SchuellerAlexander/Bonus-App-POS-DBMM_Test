@@ -58,7 +58,7 @@ public class LoyaltyController {
                 purchase.getCurrency(),
                 purchase.getPurchasedAt(),
                 ledger.getLoyaltyAccount().getId(),
-                purchase.getBranch().getId(),
+                purchase.getRestaurant().getId(),
                 ledger.getId(),
                 ledger.getPoints(),
                 ledger.getBalanceAfter());
@@ -111,7 +111,7 @@ public class LoyaltyController {
 
         return new PurchaseDetailsResponse(
                 ledger.getLoyaltyAccount().getId(),
-                purchase.getBranch().getId(),
+                purchase.getRestaurant().getId(),
                 purchase.getPurchaseNumber(),
                 purchase.getTotalAmount(),
                 purchase.getCurrency(),

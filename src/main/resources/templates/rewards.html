@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout('Rewards', ~{::section})}">
-<section class="space-y-8" th:attr="data-current-points=${account != null ? account.currentPoints : 0}">
+<section class="space-y-8">
     <div class="grid gap-6 lg:grid-cols-[2fr,1fr]">
         <div class="card p-6 reveal">
-            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Rewards</div>
-            <div class="font-display text-2xl">Redeem Your Points</div>
-            <p class="mt-2 text-sm text-ink/60">Redemptions are processed through POST /api/redemptions.</p>
+            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Schritt 1 · Übersicht</div>
+            <div class="font-display text-2xl">Punkte einlösen</div>
+            <p class="mt-2 text-sm text-ink/60">
+                Du kannst deine Punkte bei teilnehmenden Restaurants einlösen.
+            </p>
         </div>
         <div class="card p-6 reveal">
-            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Current Points</div>
+            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Aktueller Punktestand</div>
             <div class="points-big" th:text="${account != null ? account.currentPoints : 0}">0</div>
             <div class="mt-4 text-sm text-ink/60">Account Id: <span class="font-semibold" th:text="${accountId}">-</span></div>
         </div>
@@ -19,54 +21,61 @@
         <div class="text-sm" th:text="${apiError.message}">Message</div>
     </div>
 
-    <div class="grid gap-6 md:grid-cols-2">
-        <div class="card p-6 reveal" th:each="card, iter : ${rewardCards}" data-reward-card>
-            <div class="flex items-center justify-between">
-                <div>
-                    <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Reward</div>
-                    <div class="font-display text-xl" th:text="${card.name}">Reward</div>
-                </div>
-                <div class="stat-pill" th:text="${card.custom ? 'Custom' : card.costPoints + ' pts'}">0 pts</div>
+    <div class="card p-6 reveal">
+        <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Schritt 2 · Restaurant auswählen</div>
+        <div class="font-display text-xl">Wähle ein Restaurant</div>
+        <form class="mt-4 grid gap-4 md:grid-cols-[2fr,auto]" action="/rewards" method="get" data-loading>
+            <div class="flex flex-col gap-2">
+                <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="restaurantId">Restaurant</label>
+                <select class="input" id="restaurantId" name="restaurantId" required>
+                    <option th:each="restaurant : ${restaurants}"
+                            th:value="${restaurant.id}"
+                            th:selected="${restaurant.id == restaurantId}"
+                            th:text="${restaurant.name}">
+                        Restaurant
+                    </option>
+                </select>
             </div>
-            <p class="mt-2 text-sm text-ink/60" th:text="${card.description}">Description</p>
+            <div class="flex items-end">
+                <button class="btn-secondary w-full" type="submit">Auswählen</button>
+            </div>
+        </form>
+    </div>
 
-            <form class="mt-6 space-y-3" action="/rewards/redeem" method="post" data-loading>
-                <div class="flex flex-col gap-2" th:if="${card.custom}">
-                    <label class="text-xs uppercase tracking-[0.2em] text-ink/60"
-                           th:for="'rewardId-' + ${iter.index}">Reward Id</label>
-                    <input class="input" name="rewardId" type="number" min="1"
-                           th:id="'rewardId-' + ${iter.index}"
-                           th:value="${card.rewardId}">
+    <div class="space-y-4">
+        <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Schritt 3 · Verfügbare Rewards</div>
+        <div class="grid gap-6 md:grid-cols-2">
+            <div class="card p-6 reveal"
+                 th:each="reward : ${rewards}"
+                 th:classappend="${account == null or account.currentPoints < reward.costPoints} ? 'opacity-60' : ''">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Reward</div>
+                        <div class="font-display text-xl" th:text="${reward.name}">Reward</div>
+                    </div>
+                    <div class="stat-pill" th:text="${reward.costPoints + ' pts'}">0 pts</div>
                 </div>
-                <input type="hidden" name="rewardId" th:value="${card.rewardId}" th:if="${!card.custom}">
+                <p class="mt-2 text-sm text-ink/60" th:text="${reward.description}">Description</p>
 
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs uppercase tracking-[0.2em] text-ink/60"
-                           th:for="'branchId-' + ${iter.index}">Branch Id</label>
-                    <input class="input" name="branchId" type="number" min="1" value="1"
-                           th:id="'branchId-' + ${iter.index}">
-                </div>
-
-                <div class="flex flex-col gap-2" th:if="${card.custom}">
-                    <label class="text-xs uppercase tracking-[0.2em] text-ink/60"
-                           th:for="'costPoints-' + ${iter.index}">Cost Points (for UI only)</label>
-                    <input class="input" name="costPoints" type="number" min="0" value="0" data-cost-input
-                           th:id="'costPoints-' + ${iter.index}">
-                </div>
-
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs uppercase tracking-[0.2em] text-ink/60"
-                           th:for="'notes-' + ${iter.index}">Notes</label>
-                    <input class="input" name="notes" type="text" placeholder="Optional note"
-                           th:id="'notes-' + ${iter.index}">
-                </div>
-
-                <button class="btn-primary w-full"
-                        type="submit"
-                        th:disabled="${!card.custom and (account == null or account.currentPoints < card.costPoints)}">
-                    Redeem Reward
-                </button>
-            </form>
+                <form class="mt-6 space-y-3" action="/rewards/redeem" method="post" data-loading>
+                    <input type="hidden" name="rewardId" th:value="${reward.id}">
+                    <input type="hidden" name="branchId" th:value="${defaultBranchId}">
+                    <input type="hidden" name="restaurantId" th:value="${restaurantId}">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs uppercase tracking-[0.2em] text-ink/60" th:for="'notes-' + ${reward.id}">Notes</label>
+                        <input class="input" name="notes" type="text" placeholder="Optional note"
+                               th:id="'notes-' + ${reward.id}">
+                    </div>
+                    <button class="btn-primary w-full"
+                            type="submit"
+                            th:disabled="${defaultBranchId == null or account == null or account.currentPoints < reward.costPoints}">
+                        Einlösen
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="card p-6 text-sm text-ink/60" th:if="${rewards == null or #lists.isEmpty(rewards)}">
+            Für dieses Restaurant sind aktuell keine Rewards verfügbar.
         </div>
     </div>
 </section>

@@ -27,6 +27,7 @@ public class AuthController {
         if (accountId != null) {
             return "redirect:/dashboard";
         }
+        model.addAttribute("hideChrome", true);
         return "login";
     }
 
@@ -42,6 +43,7 @@ public class AuthController {
                 })
                 .orElseGet(() -> {
                     model.addAttribute("loginError", "Invalid username or password");
+                    model.addAttribute("hideChrome", true);
                     return "login";
                 });
     }
@@ -60,6 +62,7 @@ public class AuthController {
             return "redirect:/dashboard";
         } catch (IllegalArgumentException ex) {
             model.addAttribute("signupError", ex.getMessage());
+            model.addAttribute("hideChrome", true);
             return "login";
         }
     }

@@ -30,7 +30,7 @@ import java.util.List;
         @UniqueConstraint(name = "uk_purchase_number", columnNames = "purchase_number")
 }, indexes = {
         @Index(name = "idx_purchase_account", columnList = "loyalty_account_id"),
-        @Index(name = "idx_purchase_branch", columnList = "branch_id"),
+        @Index(name = "idx_purchase_restaurant", columnList = "restaurant_id"),
         @Index(name = "idx_purchase_occurred_at", columnList = "purchased_at")
 })
 public class Purchase {
@@ -45,8 +45,8 @@ public class Purchase {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "branch_id", nullable = false)
-    private Branch branch;
+    @JoinColumn(name = "restaurant_id", nullable = false)
+    private Restaurant restaurant;
 
     @NotBlank
     @Size(max = 40)
@@ -96,12 +96,12 @@ public class Purchase {
         this.loyaltyAccount = loyaltyAccount;
     }
 
-    public Branch getBranch() {
-        return branch;
+    public Restaurant getRestaurant() {
+        return restaurant;
     }
 
-    public void setBranch(Branch branch) {
-        this.branch = branch;
+    public void setRestaurant(Restaurant restaurant) {
+        this.restaurant = restaurant;
     }
 
     public String getPurchaseNumber() {

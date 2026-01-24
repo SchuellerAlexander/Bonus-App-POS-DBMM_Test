@@ -31,7 +31,8 @@ public class DashboardController {
     }
 
     @GetMapping("/")
-    public String home() {
+    public String home(Model model) {
+        model.addAttribute("hideChrome", true);
         return "index";
     }
 

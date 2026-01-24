@@ -14,24 +14,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  const pointsHost = document.querySelector("[data-current-points]");
-  const currentPoints = pointsHost ? Number(pointsHost.getAttribute("data-current-points")) : null;
-  if (!Number.isNaN(currentPoints)) {
-    document.querySelectorAll("[data-reward-card]").forEach((card) => {
-      const costInput = card.querySelector("[data-cost-input]");
-      const submit = card.querySelector("button[type='submit']");
-      if (!costInput || !submit) {
-        return;
-      }
-      const updateState = () => {
-        const cost = Number(costInput.value || 0);
-        submit.disabled = cost > currentPoints;
-      };
-      costInput.addEventListener("input", updateState);
-      updateState();
-    });
-  }
-
   // Profile Modal Functionality
   const profileBtn = document.getElementById("profileBtn");
   const accountModal = document.getElementById("accountModal");
@@ -160,7 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const safeValue = (value) => (value === null || value === undefined || value === "" ? "-" : value);
             const rows = [
               { label: "Account Id", value: safeValue(data.accountId) },
-              { label: "Branch Id", value: safeValue(data.branchId) },
+              { label: "Restaurant Id", value: safeValue(data.restaurantId) },
               { label: "Purchase Number", value: safeValue(data.purchaseNumber) },
               { label: "Total Amount", value: safeValue(data.totalAmount) },
               { label: "Currency", value: safeValue(data.currency) },

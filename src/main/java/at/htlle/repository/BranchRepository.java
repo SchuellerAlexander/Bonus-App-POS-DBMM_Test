@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BranchRepository extends JpaRepository<Branch, Long> {
     Optional<Branch> findByRestaurantIdAndBranchCode(Long restaurantId, String branchCode);
+
+    Optional<Branch> findFirstByRestaurantIdOrderByIdAsc(Long restaurantId);
 }

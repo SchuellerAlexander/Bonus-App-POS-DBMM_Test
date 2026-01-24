@@ -27,7 +27,7 @@
 </head>
 <body class="app-bg text-ink" th:attr="data-account-id=${accountId}">
 <div class="min-h-screen flex flex-col">
-    <header class="border-b border-ink/10 backdrop-blur">
+    <header class="border-b border-ink/10 backdrop-blur" th:if="${hideChrome == null or !hideChrome}">
         <div class="mx-auto max-w-6xl px-6 py-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
                 <div class="text-sm uppercase tracking-[0.3em] text-ink/60">Bonus App</div>
@@ -52,7 +52,7 @@
     </header>
 
     <!-- Account Modal -->
-    <div id="accountModal" class="modal hidden">
+    <div id="accountModal" class="modal hidden" th:if="${hideChrome == null or !hideChrome}">
         <div class="modal-overlay"></div>
         <div class="modal-content card">
             <div class="flex justify-between items-center mb-6">
@@ -71,7 +71,7 @@
         </div>
     </main>
 
-    <footer class="border-t border-ink/10">
+    <footer class="border-t border-ink/10" th:if="${hideChrome == null or !hideChrome}">
         <div class="mx-auto max-w-6xl px-6 py-6 text-sm text-ink/60 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <span>Powered by Spring Boot and Thymeleaf</span>
             <span>UI uses REST endpoints only</span>

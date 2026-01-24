@@ -2,7 +2,6 @@ package at.htlle.service;
 
 import at.htlle.dto.PurchaseRequest;
 import at.htlle.dto.RedemptionRequest;
-import at.htlle.entity.Branch;
 import at.htlle.entity.LoyaltyAccount;
 import at.htlle.entity.PointLedger;
 import at.htlle.entity.PointRule;
@@ -74,19 +73,16 @@ public class LoyaltyService {
 
         Purchase purchase = new Purchase();
         purchase.setLoyaltyAccount(account);
+        // Purchases now accrue points at the restaurant level instead of a branch.
+        if (!account.getRestaurant().getId().equals(request.restaurantId())) {
+            throw new IllegalArgumentException("Restaurant does not belong to account");
+        }
+        purchase.setRestaurant(account.getRestaurant());
         purchase.setPurchaseNumber(request.purchaseNumber());
         purchase.setCurrency(request.currency().trim().toUpperCase(Locale.ROOT));
         purchase.setTotalAmount(request.totalAmount());
         purchase.setPurchasedAt(Optional.ofNullable(request.purchasedAt()).orElse(Instant.now()));
         purchase.setNotes(request.notes());
-
-        Branch branch = branchRepository
-                .findById(request.branchId())
-                .orElseThrow(() -> new EntityNotFoundException("Branch not found"));
-        if (!branch.getRestaurant().getId().equals(account.getRestaurant().getId())) {
-            throw new IllegalArgumentException("Branch does not belong to restaurant");
-        }
-        purchase.setBranch(branch);
 
         Purchase persisted = purchaseRepository.save(purchase);
 
