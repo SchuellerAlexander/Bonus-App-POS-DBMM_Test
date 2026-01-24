@@ -12,8 +12,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -44,10 +42,12 @@ public class RewardController {
     public String rewards(@RequestParam(name = "restaurantId", required = false) Long restaurantId,
                           Model model,
                           HttpServletRequest request) {
+
         Long accountId = sessionAccountResolver.getAccountId(request);
         if (accountId == null) {
             return "redirect:/login";
         }
+
         loadRewardsPage(accountId, model, request, restaurantId, null);
         return "rewards";
     }
@@ -59,29 +59,32 @@ public class RewardController {
                          @RequestParam(name = "notes", required = false) String notes,
                          Model model,
                          HttpServletRequest request) {
+
         Long accountId = sessionAccountResolver.getAccountId(request);
         if (accountId == null) {
             return "redirect:/login";
         }
+
         RedemptionRequest payload = new RedemptionRequest(accountId, rewardId, branchId, notes);
-        String baseUrl = baseUrl(request);
+
         try {
             RedemptionResponse response = restTemplate.postForObject(
-                    baseUrl + "/api/redemptions",
+                    baseUrl(request) + "/api/redemptions",
                     payload,
                     RedemptionResponse.class);
+
             model.addAttribute("redemption", response);
             model.addAttribute("accountId", accountId);
             return "redemption-success";
+
         } catch (HttpStatusCodeException ex) {
-            ErrorResponse errorResponse = parseError(ex, request);
-            loadRewardsPage(accountId, model, request, restaurantId, errorResponse);
-            return "rewards";
+            loadRewardsPage(accountId, model, request, restaurantId, parseError(ex, request));
         } catch (RestClientException ex) {
-            ErrorResponse errorResponse = fallbackError("Failed to redeem reward", request.getRequestURI());
-            loadRewardsPage(accountId, model, request, restaurantId, errorResponse);
-            return "rewards";
+            loadRewardsPage(accountId, model, request, restaurantId,
+                    fallbackError("Failed to redeem reward", request.getRequestURI()));
         }
+
+        return "rewards";
     }
 
     private void loadRewardsPage(Long accountId,
@@ -89,45 +92,44 @@ public class RewardController {
                                  HttpServletRequest request,
                                  Long restaurantId,
                                  ErrorResponse errorResponse) {
-        String baseUrl = baseUrl(request);
+
         AccountResponse account = null;
         try {
             account = restTemplate.getForObject(
-                    baseUrl + "/api/accounts/{id}?includeLedger=false",
+                    baseUrl(request) + "/api/accounts/{id}?includeLedger=false",
                     AccountResponse.class,
                     accountId);
             model.addAttribute("account", account);
-        } catch (HttpStatusCodeException ex) {
-            model.addAttribute("apiError", parseError(ex, request));
-        } catch (RestClientException ex) {
+        } catch (Exception ex) {
             model.addAttribute("apiError", fallbackError("Failed to load account", request.getRequestURI()));
         }
-        model.addAttribute("accountId", accountId);
+
         RestaurantSummaryResponse[] restaurants = new RestaurantSummaryResponse[0];
         try {
-            RestaurantSummaryResponse[] response = restTemplate.getForObject(
-                    baseUrl + "/api/restaurants",
+            restaurants = restTemplate.getForObject(
+                    baseUrl(request) + "/api/restaurants",
                     RestaurantSummaryResponse[].class);
-            restaurants = Objects.requireNonNullElse(response, new RestaurantSummaryResponse[0]);
-        } catch (HttpStatusCodeException ex) {
-            model.addAttribute("apiError", parseError(ex, request));
-        } catch (RestClientException ex) {
+        } catch (Exception ex) {
             model.addAttribute("apiError", fallbackError("Failed to load restaurants", request.getRequestURI()));
         }
 
         model.addAttribute("restaurants", restaurants);
-        Long selectedRestaurantId = Optional.ofNullable(restaurantId)
-                .orElseGet(() -> account != null ? account.restaurantId() : null);
+
+        Long selectedRestaurantId = restaurantId;
+        if (selectedRestaurantId == null && account != null) {
+            selectedRestaurantId = account.restaurantId();
+        }
         if (selectedRestaurantId == null && restaurants.length > 0) {
             selectedRestaurantId = restaurants[0].id();
         }
 
         model.addAttribute("restaurantId", selectedRestaurantId);
+
         Long defaultBranchId = null;
         if (selectedRestaurantId != null) {
-            for (RestaurantSummaryResponse restaurant : restaurants) {
-                if (restaurant.id().equals(selectedRestaurantId)) {
-                    defaultBranchId = restaurant.defaultBranchId();
+            for (RestaurantSummaryResponse r : restaurants) {
+                if (r.id().equals(selectedRestaurantId)) {
+                    defaultBranchId = r.defaultBranchId();
                     break;
                 }
             }
@@ -137,18 +139,18 @@ public class RewardController {
         List<RewardSummaryResponse> rewards = List.of();
         if (selectedRestaurantId != null) {
             try {
-                RewardSummaryResponse[] rewardResponse = restTemplate.getForObject(
-                        baseUrl + "/api/restaurants/{id}/rewards",
+                RewardSummaryResponse[] response = restTemplate.getForObject(
+                        baseUrl(request) + "/api/restaurants/{id}/rewards",
                         RewardSummaryResponse[].class,
                         selectedRestaurantId);
-                rewards = rewardResponse != null ? Arrays.asList(rewardResponse) : List.of();
-            } catch (HttpStatusCodeException ex) {
-                model.addAttribute("apiError", parseError(ex, request));
-            } catch (RestClientException ex) {
+                rewards = response != null ? Arrays.asList(response) : List.of();
+            } catch (Exception ex) {
                 model.addAttribute("apiError", fallbackError("Failed to load rewards", request.getRequestURI()));
             }
         }
+
         model.addAttribute("rewards", rewards);
+
         if (errorResponse != null) {
             model.addAttribute("apiError", errorResponse);
         }
@@ -161,7 +163,7 @@ public class RewardController {
     private ErrorResponse parseError(HttpStatusCodeException ex, HttpServletRequest request) {
         try {
             return objectMapper.readValue(ex.getResponseBodyAsByteArray(), ErrorResponse.class);
-        } catch (Exception parseEx) {
+        } catch (Exception e) {
             return fallbackError(ex.getStatusText(), request.getRequestURI());
         }
     }
@@ -169,5 +171,4 @@ public class RewardController {
     private ErrorResponse fallbackError(String message, String path) {
         return new ErrorResponse(Instant.now(), 500, "Internal Server Error", message, path);
     }
-
 }

@@ -8,13 +8,13 @@
                     <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Account</div>
                     <div class="font-display text-2xl">Dashboard Overview</div>
                 </div>
-                <form class="flex flex-wrap gap-3 items-end" action="/dashboard" method="get" data-loading>
-                    <div class="flex flex-col gap-2">
-                        <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="accountId">Account Id</label>
-                        <input class="input" id="accountId" name="accountId" type="number" min="1" th:value="${accountId}">
+                <div class="flex items-center gap-6">
+                    <div>
+                        <div class="text-xs uppercase tracking-[0.2em] text-ink/60">Account Id</div>
+                        <div class="font-semibold text-lg mt-1" th:text="${accountId}">-</div>
                     </div>
-                    <button class="btn-primary" type="submit">Load</button>
-                </form>
+                    <input type="hidden" id="accountId" th:value="${accountId}">
+                </div>
             </div>
         </div>
 
@@ -35,33 +35,15 @@
         <div class="text-sm" th:text="${apiError.message}">Message</div>
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-[1fr,1fr]">
-        <div class="card p-6 reveal">
-            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Account Details</div>
-            <div class="mt-4 space-y-2 text-sm">
-                <div class="flex justify-between border-b border-ink/10 py-2">
-                    <span>Account Number</span>
-                    <span th:text="${account != null ? account.accountNumber : '-'}">-</span>
-                </div>
-                <div class="flex justify-between border-b border-ink/10 py-2">
-                    <span>Customer Id</span>
-                    <span th:text="${account != null ? account.customerId : '-'}">-</span>
-                </div>
-                <div class="flex justify-between border-b border-ink/10 py-2">
-                    <span>Restaurant Id</span>
-                    <span th:text="${account != null ? account.restaurantId : '-'}">-</span>
-                </div>
-                <div class="flex justify-between border-b border-ink/10 py-2">
-                    <span>Created</span>
-                    <span th:text="${account != null ? account.createdAt : '-'}">-</span>
-                </div>
-            </div>
-        </div>
-
+    <div class="grid gap-6 lg:grid-cols-[1fr]">
         <div class="card p-6 reveal">
             <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Latest Ledger Entries</div>
             <div class="mt-4 space-y-3" th:if="${account != null and account.ledgerEntries != null}">
-                <div class="ledger-row" th:each="entry, iter : ${account.ledgerEntries}" th:if="${iter.index < 6}">
+                <button type="button"
+                        class="ledger-row ledger-row-button w-full text-left"
+                        th:each="entry, iter : ${account.ledgerEntries}"
+                        th:if="${iter.index < 6}"
+                        th:attr="data-ledger-id=${entry.id}">
                     <div class="flex items-center justify-between">
                         <div class="font-semibold" th:text="${entry.entryType}">EARN</div>
                         <div class="text-sm text-ink/60" th:text="${entry.occurredAt}">-</div>
@@ -71,10 +53,23 @@
                         <span th:text="${entry.points}">0</span>
                     </div>
                     <div class="text-xs text-ink/60">Balance after: <span th:text="${entry.balanceAfter}">0</span></div>
-                </div>
+                </button>
             </div>
             <div class="mt-4 text-sm text-ink/60" th:if="${account == null or account.ledgerEntries == null}">
                 No ledger entries loaded.
+            </div>
+        </div>
+    </div>
+
+    <div id="ledgerModal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content card">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="font-display text-2xl">Purchase Details</h2>
+                <button id="closeLedgerModalBtn" class="text-ink/60 hover:text-ink text-2xl" aria-label="Close">&times;</button>
+            </div>
+            <div id="ledgerContent" class="space-y-4">
+                <!-- Content loaded via JavaScript -->
             </div>
         </div>
     </div>

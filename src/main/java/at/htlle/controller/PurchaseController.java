@@ -11,7 +11,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Locale;
-import java.util.Optional;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -59,11 +58,14 @@ public class PurchaseController {
                                  @RequestParam(name = "description", required = false) String description,
                                  Model model,
                                  HttpServletRequest request) {
+
         Long accountId = sessionAccountResolver.getAccountId(request);
         if (accountId == null) {
             return "redirect:/login";
         }
+
         String normalizedCurrency = currency.trim().toUpperCase(Locale.ROOT);
+
         PurchaseRequest payload = new PurchaseRequest(
                 accountId,
                 restaurantId,
@@ -73,14 +75,14 @@ public class PurchaseController {
                 null,
                 notes,
                 description,
-                null);
+                null
+        );
 
         loadPurchasePage(accountId, model, request, restaurantId, normalizedCurrency);
 
-        String baseUrl = baseUrl(request);
         try {
             PurchaseResponse response = restTemplate.postForObject(
-                    baseUrl + "/api/purchases",
+                    baseUrl(request) + "/api/purchases",
                     payload,
                     PurchaseResponse.class);
             model.addAttribute("purchaseResponse", response);
@@ -89,6 +91,7 @@ public class PurchaseController {
         } catch (RestClientException ex) {
             model.addAttribute("apiError", fallbackError("Failed to create purchase", request.getRequestURI()));
         }
+
         return "purchase";
     }
 
@@ -97,36 +100,40 @@ public class PurchaseController {
                                   HttpServletRequest request,
                                   Long restaurantId,
                                   String currency) {
+
         model.addAttribute("accountId", accountId);
         model.addAttribute("currency", currency);
-        String baseUrl = baseUrl(request);
+
         AccountResponse account = null;
         try {
             account = restTemplate.getForObject(
-                    baseUrl + "/api/accounts/{id}?includeLedger=false",
+                    baseUrl(request) + "/api/accounts/{id}?includeLedger=false",
                     AccountResponse.class,
                     accountId);
-        } catch (HttpStatusCodeException ex) {
-            model.addAttribute("apiError", parseError(ex, request));
-        } catch (RestClientException ex) {
+        } catch (Exception ex) {
             model.addAttribute("apiError", fallbackError("Failed to load account", request.getRequestURI()));
         }
+
+        RestaurantSummaryResponse[] restaurants = new RestaurantSummaryResponse[0];
         try {
-            RestaurantSummaryResponse[] restaurants = restTemplate.getForObject(
-                    baseUrl + "/api/restaurants",
+            restaurants = restTemplate.getForObject(
+                    baseUrl(request) + "/api/restaurants",
                     RestaurantSummaryResponse[].class);
-            model.addAttribute("restaurants", restaurants);
-            Long selectedId = Optional.ofNullable(restaurantId)
-                    .orElseGet(() -> account != null ? account.restaurantId() : null);
-            if (selectedId == null && restaurants != null && restaurants.length > 0) {
-                selectedId = restaurants[0].id();
-            }
-            model.addAttribute("restaurantId", selectedId);
-        } catch (HttpStatusCodeException ex) {
-            model.addAttribute("apiError", parseError(ex, request));
-        } catch (RestClientException ex) {
+        } catch (Exception ex) {
             model.addAttribute("apiError", fallbackError("Failed to load restaurants", request.getRequestURI()));
         }
+
+        model.addAttribute("restaurants", restaurants);
+
+        Long selectedId = restaurantId;
+        if (selectedId == null && account != null) {
+            selectedId = account.restaurantId();
+        }
+        if (selectedId == null && restaurants != null && restaurants.length > 0) {
+            selectedId = restaurants[0].id();
+        }
+
+        model.addAttribute("restaurantId", selectedId);
     }
 
     private String baseUrl(HttpServletRequest request) {
@@ -136,7 +143,7 @@ public class PurchaseController {
     private ErrorResponse parseError(HttpStatusCodeException ex, HttpServletRequest request) {
         try {
             return objectMapper.readValue(ex.getResponseBodyAsByteArray(), ErrorResponse.class);
-        } catch (Exception parseEx) {
+        } catch (Exception e) {
             return fallbackError(ex.getStatusText(), request.getRequestURI());
         }
     }

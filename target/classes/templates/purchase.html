@@ -10,14 +10,24 @@
             <div class="text-sm text-ink/60">API: POST /api/purchases</div>
         </div>
 
+        <div class="mt-6 grid gap-4 md:grid-cols-2">
+            <div class="flex flex-col gap-2">
+                <div class="text-xs uppercase tracking-[0.2em] text-ink/60">Account Id</div>
+                <div class="font-semibold text-lg" th:text="${accountId}">-</div>
+            </div>
+        </div>
+
         <form class="mt-6 grid gap-4 md:grid-cols-2" action="/purchase" method="post" data-loading>
             <div class="flex flex-col gap-2">
-                <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="accountId">Account Id</label>
-                <input class="input" id="accountId" name="accountId" type="number" min="1" th:value="${accountId}">
-            </div>
-            <div class="flex flex-col gap-2">
-                <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="branchId">Branch Id</label>
-                <input class="input" id="branchId" name="branchId" type="number" min="1" th:value="${branchId}">
+                <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="restaurantId">Restaurant</label>
+                <select class="input" id="restaurantId" name="restaurantId" required>
+                    <option th:each="restaurant : ${restaurants}"
+                            th:value="${restaurant.id}"
+                            th:selected="${restaurant.id == restaurantId}"
+                            th:text="${restaurant.name}">
+                        Restaurant
+                    </option>
+                </select>
             </div>
             <div class="flex flex-col gap-2 md:col-span-2">
                 <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="purchaseNumber">Purchase Number</label>
@@ -68,7 +78,7 @@
                 <span th:text="${purchaseResponse.balanceAfter}">0</span>
             </div>
         </div>
-        <a class="btn-secondary mt-4 inline-block" th:href="@{/dashboard(accountId=${accountId})}">Back to Dashboard</a>
+        <a class="btn-secondary mt-4 inline-block" href="/dashboard">Back to Dashboard</a>
     </div>
 </section>
 </html>
