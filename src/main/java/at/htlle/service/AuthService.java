@@ -81,9 +81,9 @@ public class AuthService {
     }
 
     private Optional<LoyaltyAccount> resolvePrimaryAccount(Customer customer) {
-        Restaurant restaurant = restaurantRepository.findByCode("DEMO")
-                .orElseThrow(() -> new EntityNotFoundException("Restaurant not found"));
-        return loyaltyAccountRepository.findByCustomerIdAndRestaurantId(customer.getId(), restaurant.getId())
+        return restaurantRepository.findByCode("DEMO")
+                .flatMap(restaurant -> loyaltyAccountRepository
+                        .findByCustomerIdAndRestaurantId(customer.getId(), restaurant.getId()))
                 .or(() -> customer.getLoyaltyAccounts().stream()
                         .min(Comparator.comparing(LoyaltyAccount::getId)));
     }
@@ -94,7 +94,9 @@ public class AuthService {
 
     private LoyaltyAccount createLoyaltyAccount(Customer customer) {
         Restaurant restaurant = restaurantRepository.findByCode("DEMO")
-                .orElseThrow(() -> new EntityNotFoundException("Restaurant not found"));
+                .orElseGet(() -> restaurantRepository.findAll().stream()
+                        .findFirst()
+                        .orElseThrow(() -> new EntityNotFoundException("Restaurant not found")));
         LoyaltyAccount account = new LoyaltyAccount();
         account.setCustomer(customer);
         account.setRestaurant(restaurant);

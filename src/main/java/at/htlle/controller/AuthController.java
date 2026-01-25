@@ -1,6 +1,7 @@
 package at.htlle.controller;
 
 import at.htlle.service.AuthService;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,7 +22,9 @@ public class AuthController {
     public String login(Model model,
                         Authentication authentication,
                         @RequestParam(name = "error", required = false) String error) {
-        if (authentication != null && authentication.isAuthenticated()) {
+        if (authentication != null
+                && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken)) {
             boolean isAdmin = authentication.getAuthorities().stream()
                     .anyMatch(auth -> "ROLE_ADMIN".equals(auth.getAuthority()));
             return isAdmin ? "redirect:/admin" : "redirect:/dashboard";

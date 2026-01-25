@@ -326,15 +326,15 @@ public class AdminController {
 
     private void loadAdminData(Model model) {
         List<Restaurant> restaurants = safeList(restaurantRepository.findAll()).stream()
-                .filter(restaurant -> restaurant.getId() != null)
+                .filter(restaurant -> restaurant != null && restaurant.getId() != null)
                 .sorted(Comparator.comparing(Restaurant::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
         List<Branch> branches = safeList(branchRepository.findAll()).stream()
-                .filter(branch -> branch.getRestaurant() != null)
+                .filter(branch -> branch != null && branch.getRestaurant() != null)
                 .sorted(Comparator.comparing(Branch::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
         List<Reward> rewards = safeList(rewardRepository.findAll()).stream()
-                .filter(reward -> reward.getRestaurant() != null)
+                .filter(reward -> reward != null && reward.getRestaurant() != null)
                 .sorted(Comparator.comparing(Reward::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
 
