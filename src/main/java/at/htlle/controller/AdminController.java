@@ -339,9 +339,12 @@ public class AdminController {
                 .toList();
 
         Map<Long, PointRule> defaultRules = restaurants.stream()
-                .collect(Collectors.toMap(Restaurant::getId, restaurant -> pointRuleRepository
-                        .findByRestaurantIdAndName(restaurant.getId(), DEFAULT_POINT_RULE_NAME)
-                        .orElse(null)));
+                .map(restaurant -> Map.entry(
+                        restaurant.getId(),
+                        pointRuleRepository.findByRestaurantIdAndName(restaurant.getId(), DEFAULT_POINT_RULE_NAME)
+                                .orElse(null)))
+                .filter(entry -> entry.getKey() != null && entry.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         model.addAttribute("restaurants", restaurants);
         model.addAttribute("branches", branches);

@@ -2,6 +2,7 @@ package at.htlle.controller;
 
 import at.htlle.dto.AccountResponse;
 import at.htlle.dto.ErrorResponse;
+import at.htlle.service.AuthService;
 import at.htlle.util.SessionAccountResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,13 +23,16 @@ public class DashboardController {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final SessionAccountResolver sessionAccountResolver;
+    private final AuthService authService;
 
     public DashboardController(RestTemplateBuilder restTemplateBuilder,
                                ObjectMapper objectMapper,
-                               SessionAccountResolver sessionAccountResolver) {
+                               SessionAccountResolver sessionAccountResolver,
+                               AuthService authService) {
         this.restTemplate = restTemplateBuilder.build();
         this.objectMapper = objectMapper;
         this.sessionAccountResolver = sessionAccountResolver;
+        this.authService = authService;
     }
 
     @GetMapping("/")
@@ -42,8 +46,15 @@ public class DashboardController {
     }
 
     @GetMapping("/dashboard")
-    public String dashboard(Model model, HttpServletRequest request) {
+    public String dashboard(Model model, HttpServletRequest request, Authentication authentication) {
         Long accountId = sessionAccountResolver.getAccountId(request);
+        if (accountId == null && authentication != null) {
+            accountId = authService.resolveAccountId(authentication.getName())
+                    .orElse(null);
+            if (accountId != null) {
+                sessionAccountResolver.setAccountId(request, accountId);
+            }
+        }
         if (accountId == null) {
             return "redirect:/login";
         }
