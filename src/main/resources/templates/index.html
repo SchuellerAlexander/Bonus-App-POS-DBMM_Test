@@ -8,6 +8,7 @@
             <p class="mt-2 text-sm text-ink/60">Use your username and password to see your points.</p>
 
             <form class="mt-6 space-y-4" action="/login" method="post" data-loading>
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <div class="flex flex-col gap-2">
                     <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="login-username">Username</label>
                     <input class="input" id="login-username" name="username" type="text" required>
@@ -28,6 +29,7 @@
             <p class="mt-2 text-sm text-ink/60">Create a customer account and start collecting points.</p>
 
             <form class="mt-6 grid gap-4 md:grid-cols-2" action="/signup" method="post" data-loading>
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <div class="flex flex-col gap-2">
                     <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="signup-first">First Name</label>
                     <input class="input" id="signup-first" name="firstName" type="text" required>

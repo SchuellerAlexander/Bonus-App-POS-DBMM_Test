@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{admin-layout :: layout('Admin Purchases', ~{::section})}">
+<section class="space-y-8">
+    <div class="card p-6 reveal">
+        <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Purchases</div>
+        <div class="font-display text-2xl">Käufe prüfen</div>
+        <p class="mt-2 text-sm text-ink/60">Audit-Übersicht aller Käufe.</p>
+    </div>
+
+    <div class="card p-6 reveal overflow-auto">
+        <table class="min-w-full text-sm">
+            <thead>
+            <tr class="text-left text-ink/60 uppercase text-xs tracking-[0.2em]">
+                <th class="py-2 pr-4">Datum</th>
+                <th class="py-2 pr-4">Kunde</th>
+                <th class="py-2 pr-4">Restaurant</th>
+                <th class="py-2 pr-4">Betrag</th>
+                <th class="py-2 pr-4">Währung</th>
+                <th class="py-2 pr-4">Purchase-Nr.</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="purchase : ${purchases}" class="border-t border-ink/10">
+                <td class="py-3 pr-4" th:text="${purchase.purchasedAt}">-</td>
+                <td class="py-3 pr-4"
+                    th:text="${purchase.loyaltyAccount.customer.firstName + ' ' + purchase.loyaltyAccount.customer.lastName}">-</td>
+                <td class="py-3 pr-4" th:text="${purchase.restaurant.name}">-</td>
+                <td class="py-3 pr-4" th:text="${purchase.totalAmount}">0</td>
+                <td class="py-3 pr-4" th:text="${purchase.currency}">-</td>
+                <td class="py-3 pr-4" th:text="${purchase.purchaseNumber}">-</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+</html>
