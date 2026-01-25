@@ -7,8 +7,8 @@ import at.htlle.dto.RedemptionRequest;
 import at.htlle.entity.LoyaltyAccount;
 import at.htlle.entity.PointLedger;
 import at.htlle.entity.PointRule;
-import at.htlle.entity.Redemption;
 import at.htlle.entity.Reward;
+import at.htlle.entity.RewardRedemption;
 import at.htlle.repository.BranchRepository;
 import at.htlle.repository.LoyaltyAccountRepository;
 import at.htlle.repository.PointRuleRepository;
@@ -42,13 +42,33 @@ class LoyaltyServiceIntegrationTest {
 
     @Test
     void earnAndRedeemFlowShouldUpdateBalances() {
-        LoyaltyAccount account = loyaltyAccountRepository.findByAccountNumber("ACCT-0001")
+
+        // GIVEN
+        LoyaltyAccount account = loyaltyAccountRepository
+                .findByAccountNumber("ACCT-0001")
                 .orElseThrow();
-        PointRule rule = pointRuleRepository.findAll().stream().findFirst().orElseThrow();
-        Reward reward = rewardRepository.findAll().stream().findFirst().orElseThrow();
-        Long branchId = branchRepository.findAll().stream().findFirst().map(branch -> branch.getId()).orElseThrow();
+
+        PointRule rule = pointRuleRepository
+                .findAll()
+                .stream()
+                .findFirst()
+                .orElseThrow();
+
+        Reward reward = rewardRepository
+                .findAll()
+                .stream()
+                .findFirst()
+                .orElseThrow();
+
+        Long branchId = branchRepository
+                .findAll()
+                .stream()
+                .findFirst()
+                .map(branch -> branch.getId())
+                .orElseThrow();
 
         BigDecimal amount = BigDecimal.valueOf(123.45);
+
         PurchaseRequest purchaseRequest = new PurchaseRequest(
                 account.getId(),
                 branchId,
@@ -58,35 +78,78 @@ class LoyaltyServiceIntegrationTest {
                 Instant.parse("2025-01-01T10:15:30Z"),
                 "Mittagessen",
                 "Integrationstest Kauf",
-                rule.getId());
+                rule.getId()
+        );
 
+        // WHEN – earn points
         PointLedger ledger = loyaltyService.recordPurchase(purchaseRequest);
-        LoyaltyAccount updatedAccount = loyaltyAccountRepository.findById(account.getId()).orElseThrow();
+        LoyaltyAccount afterEarn = loyaltyAccountRepository
+                .findById(account.getId())
+                .orElseThrow();
 
-        assertThat(ledger.getEntryType()).isEqualTo(PointLedger.EntryType.EARN);
-        assertThat(updatedAccount.getCurrentPoints()).isGreaterThanOrEqualTo(120);
+        // THEN – points earned
+        assertThat(ledger.getEntryType())
+                .isEqualTo(PointLedger.EntryType.EARN);
 
-        RedemptionRequest redemptionRequest = new RedemptionRequest(account.getId(), reward.getId(), branchId, "Welcome Drink");
-        Redemption redemption = loyaltyService.redeemReward(redemptionRequest);
-        LoyaltyAccount afterRedemption = loyaltyAccountRepository.findById(account.getId()).orElseThrow();
+        assertThat(afterEarn.getCurrentPoints())
+                .isGreaterThanOrEqualTo(120);
 
-        assertThat(redemption.getPointsSpent()).isEqualTo(reward.getCostPoints().longValue());
-        assertThat(afterRedemption.getCurrentPoints()).isEqualTo(ledger.getBalanceAfter() - reward.getCostPoints());
+        // WHEN – redeem reward
+        RedemptionRequest redemptionRequest =
+                new RedemptionRequest(account.getId(), reward.getId(), branchId, "Welcome Drink");
 
+        RewardRedemption redemption = loyaltyService.redeemReward(redemptionRequest);
+
+        LoyaltyAccount afterRedemption = loyaltyAccountRepository
+                .findById(account.getId())
+                .orElseThrow();
+
+        // THEN – redemption created
+        assertThat(redemption).isNotNull();
+        assertThat(redemption.getReward().getId()).isEqualTo(reward.getId());
+        assertThat(redemption.getRedemptionCode()).isNotBlank();
+        assertThat(redemption.isRedeemed()).isFalse();
+
+        // THEN – points deducted correctly
+        assertThat(afterRedemption.getCurrentPoints())
+                .isEqualTo(ledger.getBalanceAfter() - reward.getCostPoints());
+
+        // WHEN – synchronize balance
         LoyaltyAccount synced = loyaltyService.synchronizeBalance(account.getId());
-        assertThat(synced.getCurrentPoints()).isEqualTo(afterRedemption.getCurrentPoints());
+
+        // THEN – balance stable
+        assertThat(synced.getCurrentPoints())
+                .isEqualTo(afterRedemption.getCurrentPoints());
     }
 
     @Test
     void redeemShouldFailWhenInsufficientPoints() {
-        LoyaltyAccount account = loyaltyAccountRepository.findByAccountNumber("ACCT-0001")
+
+        // GIVEN
+        LoyaltyAccount account = loyaltyAccountRepository
+                .findByAccountNumber("ACCT-0001")
                 .orElseThrow();
-        Reward reward = rewardRepository.findAll().stream().findFirst().orElseThrow();
-        Long branchId = branchRepository.findAll().stream().findFirst().map(branch -> branch.getId()).orElseThrow();
 
-        RedemptionRequest redemptionRequest = new RedemptionRequest(account.getId(), reward.getId(), branchId, "Test");
+        Reward reward = rewardRepository
+                .findAll()
+                .stream()
+                .findFirst()
+                .orElseThrow();
 
-        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () ->
-                loyaltyService.redeemReward(redemptionRequest));
+        Long branchId = branchRepository
+                .findAll()
+                .stream()
+                .findFirst()
+                .map(branch -> branch.getId())
+                .orElseThrow();
+
+        RedemptionRequest redemptionRequest =
+                new RedemptionRequest(account.getId(), reward.getId(), branchId, "Test");
+
+        // THEN
+        org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalStateException.class,
+                () -> loyaltyService.redeemReward(redemptionRequest)
+        );
     }
 }
