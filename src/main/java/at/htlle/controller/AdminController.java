@@ -20,11 +20,14 @@ import at.htlle.repository.RestaurantRepository;
 import at.htlle.repository.RewardRepository;
 import at.htlle.service.AdminManagementService;
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Objects;
+import java.util.Optional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -325,20 +328,33 @@ public class AdminController {
     }
 
     private void loadAdminData(Model model) {
-        List<Restaurant> restaurants = restaurantRepository.findAll().stream()
+        List<Restaurant> restaurants = Optional.ofNullable(restaurantRepository.findAll())
+                .orElseGet(Collections::emptyList)
+                .stream()
+                .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(Restaurant::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
-        List<Branch> branches = branchRepository.findAll().stream()
+        List<Branch> branches = Optional.ofNullable(branchRepository.findAll())
+                .orElseGet(Collections::emptyList)
+                .stream()
+                .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(Branch::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
-        List<Reward> rewards = rewardRepository.findAll().stream()
+        List<Reward> rewards = Optional.ofNullable(rewardRepository.findAll())
+                .orElseGet(Collections::emptyList)
+                .stream()
+                .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(Reward::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
 
-        Map<Long, PointRule> defaultRules = restaurants.stream()
-                .collect(Collectors.toMap(Restaurant::getId, restaurant -> pointRuleRepository
-                        .findByRestaurantIdAndName(restaurant.getId(), DEFAULT_POINT_RULE_NAME)
-                        .orElse(null)));
+        Map<Long, PointRule> defaultRules = new HashMap<>();
+        for (Restaurant restaurant : restaurants) {
+            if (restaurant == null || restaurant.getId() == null) {
+                continue;
+            }
+            pointRuleRepository.findByRestaurantIdAndName(restaurant.getId(), DEFAULT_POINT_RULE_NAME)
+                    .ifPresent(rule -> defaultRules.put(restaurant.getId(), rule));
+        }
 
         model.addAttribute("restaurants", restaurants);
         model.addAttribute("branches", branches);

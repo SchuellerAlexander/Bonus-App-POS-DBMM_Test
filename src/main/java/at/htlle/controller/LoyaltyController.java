@@ -16,6 +16,7 @@ import at.htlle.repository.PointLedgerRepository;
 import at.htlle.service.LoyaltyService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -120,7 +121,7 @@ public class LoyaltyController {
     }
 
     private AccountResponse buildAccountResponse(LoyaltyAccount account, boolean includeLedger) {
-        List<LedgerEntryResponse> ledgerEntries = null;
+        List<LedgerEntryResponse> ledgerEntries = Collections.emptyList();
         if (includeLedger) {
             ledgerEntries = pointLedgerRepository.findByLoyaltyAccountIdOrderByOccurredAtDesc(account.getId())
                     .stream()

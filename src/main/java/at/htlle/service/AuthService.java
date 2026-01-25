@@ -6,9 +6,9 @@ import at.htlle.entity.Restaurant;
 import at.htlle.repository.CustomerRepository;
 import at.htlle.repository.LoyaltyAccountRepository;
 import at.htlle.repository.RestaurantRepository;
-import jakarta.persistence.EntityNotFoundException;
 import java.util.Comparator;
 import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -54,8 +54,7 @@ public class AuthService {
         customer.setRole(Customer.Role.USER);
         Customer savedCustomer = customerRepository.save(customer);
 
-        Restaurant restaurant = restaurantRepository.findByCode("DEMO")
-                .orElseThrow(() -> new EntityNotFoundException("Restaurant not found"));
+        Restaurant restaurant = resolveOrCreateDefaultRestaurant();
 
         LoyaltyAccount account = new LoyaltyAccount();
         account.setCustomer(savedCustomer);
@@ -65,6 +64,7 @@ public class AuthService {
         return loyaltyAccountRepository.save(account);
     }
 
+    @Transactional
     public Optional<Long> resolveAccountId(String username) {
         if (!StringUtils.hasText(username)) {
             return Optional.empty();
@@ -75,14 +75,34 @@ public class AuthService {
     }
 
     private Optional<LoyaltyAccount> resolvePrimaryAccount(Customer customer) {
-        Restaurant restaurant = restaurantRepository.findByCode("DEMO")
-                .orElseThrow(() -> new EntityNotFoundException("Restaurant not found"));
+        Restaurant restaurant = resolveOrCreateDefaultRestaurant();
         return loyaltyAccountRepository.findByCustomerIdAndRestaurantId(customer.getId(), restaurant.getId())
                 .or(() -> customer.getLoyaltyAccounts().stream()
-                        .min(Comparator.comparing(LoyaltyAccount::getId)));
+                        .min(Comparator.comparing(LoyaltyAccount::getId)))
+                .or(() -> Optional.of(createAccount(customer, restaurant)));
     }
 
     private String buildAccountNumber(Long customerId) {
         return String.format("ACCT-%04d", customerId);
+    }
+
+    private LoyaltyAccount createAccount(Customer customer, Restaurant restaurant) {
+        LoyaltyAccount account = new LoyaltyAccount();
+        account.setCustomer(customer);
+        account.setRestaurant(restaurant);
+        account.setAccountNumber(buildAccountNumber(customer.getId()));
+        return loyaltyAccountRepository.save(account);
+    }
+
+    private Restaurant resolveOrCreateDefaultRestaurant() {
+        return restaurantRepository.findByCode("DEMO")
+                .orElseGet(() -> {
+                    Restaurant restaurant = new Restaurant();
+                    restaurant.setName("Demo Restaurant");
+                    restaurant.setCode("DEMO");
+                    restaurant.setActive(true);
+                    restaurant.setDefaultCurrency("EUR");
+                    return restaurantRepository.save(restaurant);
+                });
     }
 }
