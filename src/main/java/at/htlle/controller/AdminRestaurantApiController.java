@@ -8,11 +8,15 @@ import at.htlle.dto.AdminRestaurantRequest;
 import at.htlle.dto.AdminRestaurantResponse;
 import at.htlle.dto.AdminRewardRequest;
 import at.htlle.dto.AdminRewardResponse;
+import at.htlle.dto.RedemptionCodeRequest;
+import at.htlle.dto.RedemptionCodeResponse;
 import at.htlle.entity.Branch;
 import at.htlle.entity.PointRule;
 import at.htlle.entity.Restaurant;
 import at.htlle.entity.Reward;
+import at.htlle.entity.RewardRedemption;
 import at.htlle.service.AdminRestaurantService;
+import at.htlle.service.LoyaltyService;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -30,9 +34,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminRestaurantApiController {
 
     private final AdminRestaurantService adminRestaurantService;
+    private final LoyaltyService loyaltyService;
 
-    public AdminRestaurantApiController(AdminRestaurantService adminRestaurantService) {
+    public AdminRestaurantApiController(AdminRestaurantService adminRestaurantService,
+                                        LoyaltyService loyaltyService) {
         this.adminRestaurantService = adminRestaurantService;
+        this.loyaltyService = loyaltyService;
     }
 
     @GetMapping("/restaurants")
@@ -143,6 +150,18 @@ public class AdminRestaurantApiController {
     @DeleteMapping("/rewards/{id}")
     public void deleteReward(@PathVariable("id") Long rewardId) {
         adminRestaurantService.deleteReward(rewardId);
+    }
+
+    @PostMapping("/redemptions/redeem")
+    public RedemptionCodeResponse redeemRedemptionCode(@RequestBody RedemptionCodeRequest request) {
+        if (request == null || request.redemptionCode() == null) {
+            throw new IllegalArgumentException("Redemption code is required");
+        }
+        RewardRedemption redemption = loyaltyService.redeemByCode(request.redemptionCode());
+        return new RedemptionCodeResponse(
+                redemption.getRedemptionCode(),
+                redemption.isRedeemed(),
+                redemption.getRedeemedAt());
     }
 
     @GetMapping("/restaurants/{id}/point-rule")

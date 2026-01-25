@@ -17,9 +17,11 @@ import at.htlle.repository.PointRuleRepository;
 import at.htlle.repository.PurchaseRepository;
 import at.htlle.repository.RedemptionRepository;
 import at.htlle.repository.RestaurantRepository;
+import at.htlle.repository.RewardRedemptionRepository;
 import at.htlle.repository.RewardRepository;
 import at.htlle.service.AdminManagementService;
 import at.htlle.service.AdminRestaurantService;
+import at.htlle.service.LoyaltyService;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -52,8 +54,10 @@ public class AdminController {
     private final PointLedgerRepository pointLedgerRepository;
     private final PurchaseRepository purchaseRepository;
     private final RedemptionRepository redemptionRepository;
+    private final RewardRedemptionRepository rewardRedemptionRepository;
     private final AdminManagementService adminManagementService;
     private final AdminRestaurantService adminRestaurantService;
+    private final LoyaltyService loyaltyService;
 
     public AdminController(RestaurantRepository restaurantRepository,
                            BranchRepository branchRepository,
@@ -64,8 +68,10 @@ public class AdminController {
                            PointLedgerRepository pointLedgerRepository,
                            PurchaseRepository purchaseRepository,
                            RedemptionRepository redemptionRepository,
+                           RewardRedemptionRepository rewardRedemptionRepository,
                            AdminManagementService adminManagementService,
-                           AdminRestaurantService adminRestaurantService) {
+                           AdminRestaurantService adminRestaurantService,
+                           LoyaltyService loyaltyService) {
         this.restaurantRepository = restaurantRepository;
         this.branchRepository = branchRepository;
         this.rewardRepository = rewardRepository;
@@ -75,8 +81,10 @@ public class AdminController {
         this.pointLedgerRepository = pointLedgerRepository;
         this.purchaseRepository = purchaseRepository;
         this.redemptionRepository = redemptionRepository;
+        this.rewardRedemptionRepository = rewardRedemptionRepository;
         this.adminManagementService = adminManagementService;
         this.adminRestaurantService = adminRestaurantService;
+        this.loyaltyService = loyaltyService;
     }
 
     @GetMapping
@@ -165,10 +173,23 @@ public class AdminController {
                 .sorted(Comparator.comparing(Restaurant::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
         List<Redemption> redemptions = redemptionRepository.findAllByOrderByRedeemedAtDesc();
+        model.addAttribute("rewardRedemptions", rewardRedemptionRepository.findAllByOrderByCreatedAtDesc());
         model.addAttribute("rewards", rewards);
         model.addAttribute("restaurants", restaurants);
         model.addAttribute("redemptions", redemptions);
         return "admin-rewards";
+    }
+
+    @PostMapping("/redemptions/redeem")
+    public String redeemCode(@RequestParam("redemptionCode") String redemptionCode,
+                             RedirectAttributes redirectAttributes) {
+        try {
+            loyaltyService.redeemByCode(redemptionCode);
+            redirectAttributes.addFlashAttribute("redeemSuccess", "Redemption code accepted.");
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("redeemError", ex.getMessage());
+        }
+        return "redirect:/admin/rewards";
     }
 
     @GetMapping("/restaurants")

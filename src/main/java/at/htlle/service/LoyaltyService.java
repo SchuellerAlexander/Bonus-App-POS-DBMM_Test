@@ -6,16 +6,16 @@ import at.htlle.entity.LoyaltyAccount;
 import at.htlle.entity.PointLedger;
 import at.htlle.entity.PointRule;
 import at.htlle.entity.Purchase;
-import at.htlle.entity.Redemption;
 import at.htlle.entity.Reward;
+import at.htlle.entity.RewardRedemption;
 import at.htlle.entity.Restaurant;
 import at.htlle.repository.LoyaltyAccountRepository;
 import at.htlle.repository.PointLedgerRepository;
 import at.htlle.repository.PointRuleRepository;
 import at.htlle.repository.PurchaseRepository;
-import at.htlle.repository.RedemptionRepository;
 import at.htlle.repository.RestaurantRepository;
 import at.htlle.repository.RewardRepository;
+import at.htlle.repository.RewardRedemptionRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -37,8 +37,9 @@ public class LoyaltyService {
     private final PointRuleRepository pointRuleRepository;
     private final RewardRepository rewardRepository;
     private final RestaurantRepository restaurantRepository;
-    private final RedemptionRepository redemptionRepository;
+    private final RewardRedemptionRepository rewardRedemptionRepository;
     private final PointCalculator pointCalculator;
+    private final RewardRedemptionCodeGenerator rewardRedemptionCodeGenerator;
 
     public LoyaltyService(
             LoyaltyAccountRepository loyaltyAccountRepository,
@@ -47,16 +48,18 @@ public class LoyaltyService {
             PointRuleRepository pointRuleRepository,
             RewardRepository rewardRepository,
             RestaurantRepository restaurantRepository,
-            RedemptionRepository redemptionRepository,
-            PointCalculator pointCalculator) {
+            RewardRedemptionRepository rewardRedemptionRepository,
+            PointCalculator pointCalculator,
+            RewardRedemptionCodeGenerator rewardRedemptionCodeGenerator) {
         this.loyaltyAccountRepository = loyaltyAccountRepository;
         this.purchaseRepository = purchaseRepository;
         this.pointLedgerRepository = pointLedgerRepository;
         this.pointRuleRepository = pointRuleRepository;
         this.rewardRepository = rewardRepository;
         this.restaurantRepository = restaurantRepository;
-        this.redemptionRepository = redemptionRepository;
+        this.rewardRedemptionRepository = rewardRedemptionRepository;
         this.pointCalculator = pointCalculator;
+        this.rewardRedemptionCodeGenerator = rewardRedemptionCodeGenerator;
     }
 
     @Transactional
@@ -134,24 +137,29 @@ public class LoyaltyService {
     }
 
     @Transactional
-    public Redemption redeemReward(RedemptionRequest request) {
+    public RewardRedemption redeemReward(RedemptionRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Redemption request is required");
+        }
+        return redeemReward(request.accountId(), request.rewardId(), request.notes());
+    }
+
+    @Transactional
+    public RewardRedemption redeemReward(Long accountId, Long rewardId, String notes) {
         LoyaltyAccount account = loyaltyAccountRepository
-                .lockById(request.accountId())
+                .lockById(accountId)
                 .orElseThrow(() -> new EntityNotFoundException("Account not found"));
 
         Reward reward = rewardRepository
-                .findById(request.rewardId())
+                .findById(rewardId)
                 .orElseThrow(() -> new EntityNotFoundException("Reward not found"));
-
-        Restaurant restaurant = restaurantRepository
-                .findById(request.restaurantId())
-                .orElseThrow(() -> new EntityNotFoundException("Restaurant not found"));
 
         if (!reward.isActive()) {
             throw new IllegalStateException("Reward inactive");
         }
-        if (!reward.getRestaurant().getId().equals(restaurant.getId())) {
-            throw new IllegalArgumentException("Reward does not belong to restaurant");
+        Restaurant restaurant = reward.getRestaurant();
+        if (restaurant == null || restaurant.getId() == null) {
+            throw new IllegalStateException("Reward is not linked to a restaurant");
         }
         LocalDate today = LocalDate.now();
         if (reward.getValidFrom() != null && reward.getValidFrom().isAfter(today)) {
@@ -172,27 +180,35 @@ public class LoyaltyService {
         ledger.setEntryType(PointLedger.EntryType.REDEEM);
         ledger.setPoints(-cost);
         ledger.setBalanceAfter(newBalance);
-        ledger.setDescription(request.notes() != null ? request.notes() : "Reward redemption");
+        ledger.setDescription(notes != null ? notes : "Reward redemption");
         ledger.setOccurredAt(Instant.now());
 
         account.setCurrentPoints(newBalance);
         loyaltyAccountRepository.save(account);
-        PointLedger persistedLedger = pointLedgerRepository.save(ledger);
+        pointLedgerRepository.save(ledger);
 
-        Redemption redemption = new Redemption();
+        RewardRedemption redemption = new RewardRedemption();
         redemption.setLoyaltyAccount(account);
         redemption.setReward(reward);
-        redemption.setRestaurant(restaurant);
-        redemption.setLedgerEntry(persistedLedger);
-        redemption.setStatus(Redemption.Status.COMPLETED);
-        redemption.setRedeemedAt(Instant.now());
-        redemption.setPointsSpent(cost);
-        redemption.setNotes(request.notes());
+        redemption.setRedemptionCode(rewardRedemptionCodeGenerator.generateUniqueCode());
+        redemption.setRedeemed(false);
+        redemption.setRedeemedAt(null);
+        return rewardRedemptionRepository.save(redemption);
+    }
 
-        Redemption saved = redemptionRepository.save(redemption);
-        persistedLedger.setRedemption(saved);
-        pointLedgerRepository.save(persistedLedger);
-        return saved;
+    @Transactional
+    public RewardRedemption redeemByCode(String redemptionCode) {
+        if (!StringUtils.hasText(redemptionCode)) {
+            throw new IllegalArgumentException("Redemption code is required");
+        }
+        RewardRedemption redemption = rewardRedemptionRepository.findByRedemptionCode(redemptionCode.trim().toUpperCase(Locale.ROOT))
+                .orElseThrow(() -> new IllegalArgumentException("Redemption code not found"));
+        if (redemption.isRedeemed()) {
+            throw new IllegalStateException("Redemption code already used");
+        }
+        redemption.setRedeemed(true);
+        redemption.setRedeemedAt(Instant.now());
+        return rewardRedemptionRepository.save(redemption);
     }
 
     @Transactional

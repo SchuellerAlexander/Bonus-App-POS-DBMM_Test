@@ -2,8 +2,8 @@ package at.htlle.controller;
 
 import at.htlle.dto.AccountResponse;
 import at.htlle.dto.ErrorResponse;
-import at.htlle.dto.RedemptionRequest;
 import at.htlle.dto.RedemptionResponse;
+import at.htlle.dto.RewardRedeemRequest;
 import at.htlle.dto.RestaurantSummary;
 import at.htlle.dto.RewardSummary;
 import at.htlle.util.SessionAccountResolver;
@@ -61,13 +61,14 @@ public class RewardController {
         if (accountId == null) {
             return "redirect:/login";
         }
-        RedemptionRequest payload = new RedemptionRequest(accountId, rewardId, restaurantId, notes);
+        RewardRedeemRequest payload = new RewardRedeemRequest(notes);
         String baseUrl = baseUrl(request);
         try {
             RedemptionResponse response = restTemplate.postForObject(
-                    baseUrl + "/api/redemptions",
+                    baseUrl + "/api/rewards/{id}/redeem",
                     payload,
-                    RedemptionResponse.class);
+                    RedemptionResponse.class,
+                    rewardId);
             loadRewardsPage(accountId, restaurantId, model, request, null, response);
             return "rewards";
         } catch (HttpStatusCodeException ex) {
