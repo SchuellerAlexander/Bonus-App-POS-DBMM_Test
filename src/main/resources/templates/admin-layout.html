@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:fragment="layout(title, content)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title}">Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: "#1c2b28"
+                    },
+                    fontFamily: {
+                        display: ["Fraunces", "serif"],
+                        sans: ["Space Grotesk", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body class="app-bg text-ink">
+<div class="min-h-screen flex flex-col">
+    <header class="border-b border-ink/10 backdrop-blur">
+        <div class="mx-auto max-w-6xl px-6 py-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <div class="text-sm uppercase tracking-[0.3em] text-ink/60">Bonus App</div>
+                <div class="font-display text-2xl">Admin Console</div>
+            </div>
+            <nav class="flex flex-wrap gap-3">
+                <a class="nav-chip" href="/admin">Dashboard</a>
+                <a class="nav-chip" href="/admin/customers">Customers</a>
+                <a class="nav-chip" href="/admin/ledger">Ledger</a>
+                <a class="nav-chip" href="/admin/purchases">Purchases</a>
+                <a class="nav-chip" href="/admin/rewards">Rewards</a>
+                <a class="nav-chip" href="/admin/restaurants">Restaurants</a>
+                <form action="/logout" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button class="nav-chip" type="submit">Logout</button>
+                </form>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1">
+        <div class="mx-auto max-w-6xl px-6 py-10">
+            <div th:replace="${content}"></div>
+        </div>
+    </main>
+
+    <footer class="border-t border-ink/10">
+        <div class="mx-auto max-w-6xl px-6 py-6 text-sm text-ink/60 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <span>Admin Management</span>
+            <span>Role-based access enforced by Spring Security</span>
+        </div>
+    </footer>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>

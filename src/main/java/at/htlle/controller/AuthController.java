@@ -1,9 +1,8 @@
 package at.htlle.controller;
 
-import at.htlle.entity.LoyaltyAccount;
 import at.htlle.service.AuthService;
-import at.htlle.util.SessionAccountResolver;
-import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,36 +13,26 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class AuthController {
 
     private final AuthService authService;
-    private final SessionAccountResolver sessionAccountResolver;
 
-    public AuthController(AuthService authService, SessionAccountResolver sessionAccountResolver) {
+    public AuthController(AuthService authService) {
         this.authService = authService;
-        this.sessionAccountResolver = sessionAccountResolver;
     }
 
     @GetMapping("/login")
-    public String login(Model model, HttpServletRequest request) {
-        Long accountId = sessionAccountResolver.getAccountId(request);
-        if (accountId != null) {
-            return "redirect:/dashboard";
+    public String login(Model model,
+                        Authentication authentication,
+                        @RequestParam(name = "error", required = false) String error) {
+        if (authentication != null
+                && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken)) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> "ROLE_ADMIN".equals(auth.getAuthority()));
+            return isAdmin ? "redirect:/admin" : "redirect:/dashboard";
+        }
+        if (error != null) {
+            model.addAttribute("loginError", "Invalid username or password");
         }
         return "login";
-    }
-
-    @PostMapping("/login")
-    public String doLogin(@RequestParam("username") String username,
-                          @RequestParam("password") String password,
-                          Model model,
-                          HttpServletRequest request) {
-        return authService.authenticate(username, password)
-                .map(account -> {
-                    sessionAccountResolver.setAccountId(request, account.getId());
-                    return "redirect:/dashboard";
-                })
-                .orElseGet(() -> {
-                    model.addAttribute("loginError", "Invalid username or password");
-                    return "login";
-                });
     }
 
     @PostMapping("/signup")
@@ -52,21 +41,13 @@ public class AuthController {
                          @RequestParam("email") String email,
                          @RequestParam("username") String username,
                          @RequestParam("password") String password,
-                         Model model,
-                         HttpServletRequest request) {
+                         Model model) {
         try {
-            LoyaltyAccount account = authService.register(firstName, lastName, email, username, password);
-            sessionAccountResolver.setAccountId(request, account.getId());
-            return "redirect:/dashboard";
+            authService.register(firstName, lastName, email, username, password);
+            return "redirect:/login";
         } catch (IllegalArgumentException ex) {
             model.addAttribute("signupError", ex.getMessage());
             return "login";
         }
-    }
-
-    @GetMapping("/logout")
-    public String logout(HttpServletRequest request) {
-        sessionAccountResolver.clear(request);
-        return "redirect:/login";
     }
 }
