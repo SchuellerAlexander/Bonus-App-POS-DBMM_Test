@@ -1,69 +1,19 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{admin-layout :: layout('Admin Restaurants', ~{::section})}">
-<section class="space-y-10">
-    <div class="card p-6 reveal">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-                <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Restaurant- &amp; Branch-Verwaltung</div>
-                <div class="font-display text-2xl">Restaurants, Branches &amp; Regeln</div>
-                <p class="mt-2 text-sm text-ink/60">Verwalte Restaurants, Filialen und Punktregeln.</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="card p-6 reveal space-y-6">
-        <div class="flex flex-col gap-2">
-            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Restaurants</div>
-            <div class="font-display text-xl">Manage Restaurants</div>
+<section class="space-y-8">
+    <div class="card p-6 reveal space-y-4">
+        <div>
+            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Restaurant- &amp; Branch-Verwaltung</div>
+            <div class="font-display text-2xl">Restaurants verwalten</div>
+            <p class="mt-2 text-sm text-ink/60">Suche, bearbeite und erweitere Restaurants und Branches.</p>
         </div>
 
-        <div class="overflow-auto">
-            <table class="min-w-full text-sm">
-                <thead>
-                <tr class="text-left text-ink/60 uppercase text-xs tracking-[0.2em]">
-                    <th class="py-2 pr-4">Name</th>
-                    <th class="py-2 pr-4">Code</th>
-                    <th class="py-2 pr-4">Currency</th>
-                    <th class="py-2 pr-4">Active</th>
-                    <th class="py-2 pr-4">Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="restaurant : ${restaurants}" class="border-t border-ink/10">
-                    <td class="py-3 pr-4">
-                        <input class="input" type="text" name="name"
-                               th:attr="form='restaurant-' + ${restaurant.id}"
-                               th:value="${restaurant.name}">
-                    </td>
-                    <td class="py-3 pr-4">
-                        <input class="input" type="text" name="code"
-                               th:attr="form='restaurant-' + ${restaurant.id}"
-                               th:value="${restaurant.code}">
-                    </td>
-                    <td class="py-3 pr-4">
-                        <input class="input" type="text" name="defaultCurrency"
-                               th:attr="form='restaurant-' + ${restaurant.id}"
-                               th:value="${restaurant.defaultCurrency}">
-                    </td>
-                    <td class="py-3 pr-4">
-                        <input type="checkbox" name="active"
-                               th:attr="form='restaurant-' + ${restaurant.id}"
-                               th:checked="${restaurant.active}">
-                    </td>
-                    <td class="py-3 pr-4">
-                        <form th:id="'restaurant-' + ${restaurant.id}"
-                              th:action="@{/admin/restaurants/{id}/update(id=${restaurant.id})}"
-                              method="post" class="flex items-center gap-2">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <button class="btn-primary" type="submit">Save</button>
-                        </form>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <input id="restaurant-search" class="input md:max-w-sm" placeholder="Suche nach Name oder Code">
+            <button class="btn-secondary" type="button" data-toggle="new-restaurant-form">+ Restaurant hinzufügen</button>
         </div>
 
-        <form class="grid gap-4 md:grid-cols-4" action="/admin/restaurants/create" method="post">
+        <form id="new-restaurant-form" class="grid gap-4 md:grid-cols-4 hidden" action="/admin/restaurants/create" method="post">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <input class="input" name="name" placeholder="Restaurant name" required>
             <input class="input" name="code" placeholder="Code" required>
@@ -73,111 +23,138 @@
                     <input type="checkbox" name="active" checked>
                     Active
                 </label>
-                <button class="btn-secondary" type="submit">Add</button>
+                <button class="btn-primary" type="submit">Anlegen</button>
             </div>
         </form>
     </div>
 
-    <div class="card p-6 reveal space-y-6">
-        <div>
-            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Point Rules</div>
-            <div class="font-display text-xl">Points per Euro</div>
-        </div>
+    <div id="restaurant-list" class="space-y-4">
+        <div th:each="restaurant : ${restaurants}"
+             class="card p-5 reveal space-y-4 restaurant-item"
+             th:attr="data-name=${restaurant.name},data-code=${restaurant.code}">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <div class="font-display text-xl" th:text="${restaurant.name}">Restaurant</div>
+                    <div class="text-sm text-ink/60">
+                        <span th:text="'Code: ' + ${restaurant.code}">Code</span>
+                        <span class="mx-2">•</span>
+                        <span th:text="'Währung: ' + ${restaurant.defaultCurrency}">Currency</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs uppercase tracking-[0.2em] px-2 py-1 rounded-full"
+                          th:text="${restaurant.active ? 'Active' : 'Inactive'}"
+                          th:classappend="${restaurant.active ? 'bg-green-100 text-green-700' : 'bg-ink/10 text-ink/60'}">
+                        Active
+                    </span>
+                    <button class="btn-secondary" type="button"
+                            th:attr="data-toggle='branches',data-target='branches-' + ${restaurant.id}">
+                        Branches anzeigen
+                    </button>
+                </div>
+            </div>
 
-        <div class="grid gap-4 lg:grid-cols-2">
-            <div class="card p-4 border border-ink/10" th:each="restaurant : ${restaurants}">
-                <form class="space-y-3" action="/admin/points-rules/set" method="post">
+            <div class="flex flex-wrap gap-3">
+                <a class="btn-primary"
+                   th:href="@{/admin/restaurants/{id}/edit(id=${restaurant.id})}">
+                    ✏️ Edit Restaurant
+                </a>
+                <button class="btn-secondary" type="button"
+                        th:attr="data-toggle='branch-form',data-target='branch-form-' + ${restaurant.id}">
+                    ➕ Branch hinzufügen
+                </button>
+                <form th:action="@{/admin/restaurants/{id}/delete(id=${restaurant.id})}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button class="btn-secondary" type="submit">🗑️ Restaurant löschen</button>
+                </form>
+            </div>
+
+            <div th:id="'branches-' + ${restaurant.id}" class="hidden space-y-4">
+                <div th:if="${#lists.isEmpty(branchesByRestaurant[restaurant.id])}"
+                     class="text-sm text-ink/60">
+                    Noch keine Branches für dieses Restaurant.
+                </div>
+
+                <div th:each="branch : ${branchesByRestaurant[restaurant.id]}" class="card p-4 border border-ink/10 space-y-3">
+                    <div class="grid gap-3 md:grid-cols-4 md:items-end">
+                        <form th:action="@{/admin/branches/{id}/update(id=${branch.id})}"
+                              method="post" class="grid gap-3 md:grid-cols-4 md:col-span-3">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <input type="hidden" name="restaurantId" th:value="${restaurant.id}">
+                            <div>
+                                <label class="text-xs uppercase tracking-[0.2em] text-ink/60">Branch Code</label>
+                                <input class="input" name="branchCode" th:value="${branch.branchCode}">
+                            </div>
+                            <div>
+                                <label class="text-xs uppercase tracking-[0.2em] text-ink/60">Name</label>
+                                <input class="input" name="name" th:value="${branch.name}">
+                            </div>
+                            <label class="text-sm text-ink/60 flex items-center gap-2">
+                                <input type="checkbox" name="defaultBranch" th:checked="${branch.defaultBranch}">
+                                Default
+                            </label>
+                            <button class="btn-primary" type="submit">Speichern</button>
+                        </form>
+                        <form th:action="@{/admin/branches/{id}/delete(id=${branch.id})}" method="post" class="md:justify-self-end">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button class="btn-secondary" type="submit">🗑️ Delete</button>
+                        </form>
+                    </div>
+                </div>
+
+                <form th:id="'branch-form-' + ${restaurant.id}"
+                      class="hidden grid gap-3 md:grid-cols-4"
+                      action="/admin/branches/create" method="post">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                     <input type="hidden" name="restaurantId" th:value="${restaurant.id}">
-                    <div class="font-semibold" th:text="${restaurant.name}">Restaurant</div>
-                    <div class="flex flex-col gap-2">
-                        <label class="text-xs uppercase tracking-[0.2em] text-ink/60">Points per Euro</label>
-                        <input class="input" name="pointsPerEuro" type="number" min="0" step="0.01"
-                               th:value="${defaultRules[restaurant.id] != null ? defaultRules[restaurant.id].multiplier : 1}">
-                    </div>
+                    <input class="input" name="branchCode" placeholder="Branch code" required>
+                    <input class="input" name="name" placeholder="Branch name" required>
                     <label class="text-sm text-ink/60 flex items-center gap-2">
-                        <input type="checkbox" name="active"
-                               th:checked="${defaultRules[restaurant.id] != null ? defaultRules[restaurant.id].active : true}">
-                        Active rule
+                        <input type="checkbox" name="defaultBranch">
+                        Default
                     </label>
-                    <button class="btn-secondary" type="submit">Save Rule</button>
+                    <button class="btn-secondary" type="submit">Branch anlegen</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <div class="card p-6 reveal space-y-6">
-        <div>
-            <div class="text-sm uppercase tracking-[0.2em] text-ink/60">Branches</div>
-            <div class="font-display text-xl">Manage Branches</div>
-        </div>
+    <script>
+        const searchInput = document.getElementById('restaurant-search');
+        const restaurantItems = Array.from(document.querySelectorAll('.restaurant-item'));
+        if (searchInput) {
+            searchInput.addEventListener('input', (event) => {
+                const term = event.target.value.trim().toLowerCase();
+                restaurantItems.forEach((item) => {
+                    const name = (item.dataset.name || '').toLowerCase();
+                    const code = (item.dataset.code || '').toLowerCase();
+                    const matches = name.includes(term) || code.includes(term);
+                    item.classList.toggle('hidden', !matches);
+                });
+            });
+        }
 
-        <div class="overflow-auto">
-            <table class="min-w-full text-sm">
-                <thead>
-                <tr class="text-left text-ink/60 uppercase text-xs tracking-[0.2em]">
-                    <th class="py-2 pr-4">Restaurant</th>
-                    <th class="py-2 pr-4">Branch Code</th>
-                    <th class="py-2 pr-4">Name</th>
-                    <th class="py-2 pr-4">Default</th>
-                    <th class="py-2 pr-4">Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="branch : ${branches}" class="border-t border-ink/10">
-                    <td class="py-3 pr-4">
-                        <select class="input" name="restaurantId" th:attr="form='branch-' + ${branch.id}">
-                            <option th:each="restaurant : ${restaurants}"
-                                    th:value="${restaurant.id}"
-                                    th:selected="${restaurant.id == branch.restaurant.id}"
-                                    th:text="${restaurant.name}">Restaurant</option>
-                        </select>
-                    </td>
-                    <td class="py-3 pr-4">
-                        <input class="input" name="branchCode" th:attr="form='branch-' + ${branch.id}"
-                               th:value="${branch.branchCode}">
-                    </td>
-                    <td class="py-3 pr-4">
-                        <input class="input" name="name" th:attr="form='branch-' + ${branch.id}"
-                               th:value="${branch.name}">
-                    </td>
-                    <td class="py-3 pr-4">
-                        <input type="checkbox" name="defaultBranch" th:attr="form='branch-' + ${branch.id}"
-                               th:checked="${branch.defaultBranch}">
-                    </td>
-                    <td class="py-3 pr-4">
-                        <form th:id="'branch-' + ${branch.id}"
-                              th:action="@{/admin/branches/{id}/update(id=${branch.id})}"
-                              method="post" class="flex gap-2 items-center">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <button class="btn-primary" type="submit">Save</button>
-                        </form>
-                        <form th:action="@{/admin/branches/{id}/default(id=${branch.id})}" method="post" class="mt-2">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <button class="btn-secondary" type="submit">Set Default</button>
-                        </form>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
+        document.querySelectorAll('[data-toggle="new-restaurant-form"]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const form = document.getElementById('new-restaurant-form');
+                if (form) {
+                    form.classList.toggle('hidden');
+                }
+            });
+        });
 
-        <form class="grid gap-4 md:grid-cols-4" action="/admin/branches/create" method="post">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-            <select class="input" name="restaurantId" required>
-                <option value="" disabled selected>Select restaurant</option>
-                <option th:each="restaurant : ${restaurants}" th:value="${restaurant.id}" th:text="${restaurant.name}">Restaurant</option>
-            </select>
-            <input class="input" name="branchCode" placeholder="Branch code" required>
-            <input class="input" name="name" placeholder="Branch name" required>
-            <div class="flex items-center gap-3">
-                <label class="text-sm text-ink/60 flex items-center gap-2">
-                    <input type="checkbox" name="defaultBranch">
-                    Default
-                </label>
-                <button class="btn-secondary" type="submit">Add</button>
-            </div>
-        </form>
-    </div>
+        document.querySelectorAll('[data-toggle="branches"], [data-toggle="branch-form"]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const targetId = button.getAttribute('data-target');
+                if (!targetId) {
+                    return;
+                }
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.classList.toggle('hidden');
+                }
+            });
+        });
+    </script>
 </section>
 </html>
