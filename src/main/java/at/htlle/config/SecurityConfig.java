@@ -41,7 +41,8 @@ public class SecurityConfig {
                 .requestMatchers(PathRequest.toH2Console()).permitAll()
                 .requestMatchers("/login", "/signup", "/css/**", "/js/**", "/images/**").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/dashboard", "/purchase", "/rewards", "/api/**").hasRole("USER")
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/dashboard", "/purchase", "/rewards", "/api/**").hasAnyRole("USER", "ADMIN")
                 .anyRequest().authenticated()
             )
 
