@@ -8,8 +8,6 @@ import at.htlle.repository.BranchRepository;
 import at.htlle.repository.PointRuleRepository;
 import at.htlle.repository.RestaurantRepository;
 import at.htlle.repository.RewardRepository;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -28,9 +26,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/admin")
 public class AdminController {
 
-    private static final String ADMIN_SESSION_KEY = "adminLoggedIn";
-    private static final String ADMIN_USERNAME = "admin";
-    private static final String ADMIN_PASSWORD = "123";
     private static final String DEFAULT_POINT_RULE_NAME = "Default Points";
 
     private final RestaurantRepository restaurantRepository;
@@ -49,53 +44,16 @@ public class AdminController {
     }
 
     @GetMapping
-    public String adminHome(Model model, HttpServletRequest request) {
-        if (!isAdmin(request)) {
-            return "redirect:/admin/login";
-        }
+    public String adminHome(Model model) {
         loadAdminData(model);
         return "admin";
-    }
-
-    @GetMapping("/login")
-    public String loginPage(HttpServletRequest request) {
-        if (isAdmin(request)) {
-            return "redirect:/admin";
-        }
-        return "admin-login";
-    }
-
-    @PostMapping("/login")
-    public String login(@RequestParam("username") String username,
-                        @RequestParam("password") String password,
-                        Model model,
-                        HttpServletRequest request) {
-        if (ADMIN_USERNAME.equals(username) && ADMIN_PASSWORD.equals(password)) {
-            request.getSession(true).setAttribute(ADMIN_SESSION_KEY, Boolean.TRUE);
-            return "redirect:/admin";
-        }
-        model.addAttribute("loginError", "Invalid admin credentials.");
-        return "admin-login";
-    }
-
-    @PostMapping("/logout")
-    public String logout(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-        }
-        return "redirect:/admin/login";
     }
 
     @PostMapping("/restaurants/create")
     public String createRestaurant(@RequestParam("name") String name,
                                    @RequestParam("code") String code,
                                    @RequestParam(name = "active", defaultValue = "false") boolean active,
-                                   @RequestParam(name = "defaultCurrency", defaultValue = "EUR") String defaultCurrency,
-                                   HttpServletRequest request) {
-        if (!isAdmin(request)) {
-            return "redirect:/admin/login";
-        }
+                                   @RequestParam(name = "defaultCurrency", defaultValue = "EUR") String defaultCurrency) {
         Restaurant restaurant = new Restaurant();
         restaurant.setName(name.trim());
         restaurant.setCode(code.trim().toUpperCase(Locale.ROOT));
@@ -110,11 +68,7 @@ public class AdminController {
                                    @RequestParam("name") String name,
                                    @RequestParam("code") String code,
                                    @RequestParam(name = "active", defaultValue = "false") boolean active,
-                                   @RequestParam(name = "defaultCurrency", defaultValue = "EUR") String defaultCurrency,
-                                   HttpServletRequest request) {
-        if (!isAdmin(request)) {
-            return "redirect:/admin/login";
-        }
+                                   @RequestParam(name = "defaultCurrency", defaultValue = "EUR") String defaultCurrency) {
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new IllegalArgumentException("Restaurant not found"));
         restaurant.setName(name.trim());
@@ -128,11 +82,7 @@ public class AdminController {
     @PostMapping("/points-rules/set")
     public String setPointsRule(@RequestParam("restaurantId") Long restaurantId,
                                 @RequestParam("pointsPerEuro") BigDecimal pointsPerEuro,
-                                @RequestParam(name = "active", defaultValue = "true") boolean active,
-                                HttpServletRequest request) {
-        if (!isAdmin(request)) {
-            return "redirect:/admin/login";
-        }
+                                @RequestParam(name = "active", defaultValue = "true") boolean active) {
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new IllegalArgumentException("Restaurant not found"));
         PointRule rule = pointRuleRepository.findByRestaurantIdAndName(restaurantId, DEFAULT_POINT_RULE_NAME)
@@ -152,11 +102,7 @@ public class AdminController {
     public String createBranch(@RequestParam("restaurantId") Long restaurantId,
                                @RequestParam("branchCode") String branchCode,
                                @RequestParam("name") String name,
-                               @RequestParam(name = "defaultBranch", defaultValue = "false") boolean defaultBranch,
-                               HttpServletRequest request) {
-        if (!isAdmin(request)) {
-            return "redirect:/admin/login";
-        }
+                               @RequestParam(name = "defaultBranch", defaultValue = "false") boolean defaultBranch) {
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new IllegalArgumentException("Restaurant not found"));
         Branch branch = new Branch();
@@ -176,11 +122,7 @@ public class AdminController {
                                @RequestParam("restaurantId") Long restaurantId,
                                @RequestParam("branchCode") String branchCode,
                                @RequestParam("name") String name,
-                               @RequestParam(name = "defaultBranch", defaultValue = "false") boolean defaultBranch,
-                               HttpServletRequest request) {
-        if (!isAdmin(request)) {
-            return "redirect:/admin/login";
-        }
+                               @RequestParam(name = "defaultBranch", defaultValue = "false") boolean defaultBranch) {
         Branch branch = branchRepository.findById(branchId)
                 .orElseThrow(() -> new IllegalArgumentException("Branch not found"));
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
@@ -197,10 +139,7 @@ public class AdminController {
     }
 
     @PostMapping("/branches/{id}/default")
-    public String setDefaultBranch(@PathVariable("id") Long branchId, HttpServletRequest request) {
-        if (!isAdmin(request)) {
-            return "redirect:/admin/login";
-        }
+    public String setDefaultBranch(@PathVariable("id") Long branchId) {
         Branch branch = branchRepository.findById(branchId)
                 .orElseThrow(() -> new IllegalArgumentException("Branch not found"));
         clearDefaultBranch(branch.getRestaurant().getId());
@@ -215,11 +154,7 @@ public class AdminController {
                                @RequestParam("name") String name,
                                @RequestParam("description") String description,
                                @RequestParam("costPoints") Integer costPoints,
-                               @RequestParam(name = "active", defaultValue = "false") boolean active,
-                               HttpServletRequest request) {
-        if (!isAdmin(request)) {
-            return "redirect:/admin/login";
-        }
+                               @RequestParam(name = "active", defaultValue = "false") boolean active) {
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new IllegalArgumentException("Restaurant not found"));
         Reward reward = new Reward();
@@ -240,11 +175,7 @@ public class AdminController {
                                @RequestParam("name") String name,
                                @RequestParam("description") String description,
                                @RequestParam("costPoints") Integer costPoints,
-                               @RequestParam(name = "active", defaultValue = "false") boolean active,
-                               HttpServletRequest request) {
-        if (!isAdmin(request)) {
-            return "redirect:/admin/login";
-        }
+                               @RequestParam(name = "active", defaultValue = "false") boolean active) {
         Reward reward = rewardRepository.findById(rewardId)
                 .orElseThrow(() -> new IllegalArgumentException("Reward not found"));
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
@@ -257,11 +188,6 @@ public class AdminController {
         reward.setActive(active);
         rewardRepository.save(reward);
         return "redirect:/admin";
-    }
-
-    private boolean isAdmin(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        return session != null && Boolean.TRUE.equals(session.getAttribute(ADMIN_SESSION_KEY));
     }
 
     private void clearDefaultBranch(Long restaurantId) {

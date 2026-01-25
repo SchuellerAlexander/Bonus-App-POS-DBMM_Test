@@ -9,6 +9,7 @@ import java.time.Instant;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
@@ -31,8 +32,13 @@ public class DashboardController {
     }
 
     @GetMapping("/")
-    public String home() {
-        return "index";
+    public String home(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> "ROLE_ADMIN".equals(auth.getAuthority()));
+            return isAdmin ? "redirect:/admin" : "redirect:/dashboard";
+        }
+        return "redirect:/login";
     }
 
     @GetMapping("/dashboard")
