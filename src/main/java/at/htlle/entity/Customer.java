@@ -29,6 +29,11 @@ import java.util.List;
 })
 public class Customer {
 
+    public enum Role {
+        USER,
+        ADMIN
+    }
+
     public enum Status {
         ACTIVE,
         SUSPENDED
@@ -74,6 +79,10 @@ public class Customer {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private Status status = Status.ACTIVE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 20)
+    private Role role = Role.USER;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -162,6 +171,14 @@ public class Customer {
 
     public void setStatus(Status status) {
         this.status = status;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     public Instant getCreatedAt() {

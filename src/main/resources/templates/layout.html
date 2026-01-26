@@ -1,19 +1,23 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" th:fragment="layout(title, content)">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:fragment="layout(title, content)">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${title}">Bonus App</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: {
-                        ink: "#1c2b28"
-                    },
+                    colors: { ink: "#1c2b28" },
                     fontFamily: {
                         display: ["Fraunces", "serif"],
                         sans: ["Space Grotesk", "sans-serif"]
@@ -22,62 +26,79 @@
             }
         };
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
+
     <link rel="stylesheet" href="/app.css">
 </head>
-<body class="app-bg text-ink" th:attr="data-account-id=${accountId}">
+
+<body class="app-bg text-ink">
 <div class="min-h-screen flex flex-col">
+
+    <!-- HEADER -->
     <header class="border-b border-ink/10 backdrop-blur">
         <div class="mx-auto max-w-6xl px-6 py-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
             <div>
                 <div class="text-sm uppercase tracking-[0.3em] text-ink/60">Bonus App</div>
                 <div class="font-display text-2xl">Restaurant Loyalty</div>
             </div>
+
             <div class="flex items-center gap-4">
-                <nav class="flex flex-wrap gap-3">
+                <nav class="flex flex-wrap gap-3" sec:authorize="isAuthenticated()">
+
+                    <!-- USER NAV -->
                     <a class="nav-chip" href="/dashboard">Dashboard</a>
                     <a class="nav-chip" href="/purchase">Purchase</a>
                     <a class="nav-chip" href="/rewards">Rewards</a>
-                    <a class="nav-chip" href="/logout" th:if="${accountId != null}">Logout</a>
-                    <a class="nav-chip" href="/login" th:if="${accountId == null}">Login</a>
+
+                    <!-- LOGOUT -->
+                    <form th:action="@{/logout}" method="post" style="display:inline;">
+                        <input type="hidden"
+                               th:name="${_csrf.parameterName}"
+                               th:value="${_csrf.token}" />
+                        <button type="submit" class="nav-chip">Logout</button>
+                    </form>
+
                 </nav>
-                <button id="profileBtn" class="profile-pic" title="Account Information" aria-label="Profile Menu"
-                        th:if="${accountId != null}">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+
+                <!-- PROFILE ICON -->
+                <button id="profileBtn"
+                        class="profile-pic"
+                        title="Account Information"
+                        aria-label="Profile Menu"
+                        sec:authorize="isAuthenticated()">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke="currentColor">
+                        <path stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                     </svg>
                 </button>
+
             </div>
         </div>
     </header>
 
-    <!-- Account Modal -->
-    <div id="accountModal" class="modal hidden">
-        <div class="modal-overlay"></div>
-        <div class="modal-content card">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="font-display text-2xl">Account Information</h2>
-                <button id="closeModalBtn" class="text-ink/60 hover:text-ink text-2xl" aria-label="Close">&times;</button>
-            </div>
-            <div id="accountContent" class="space-y-4">
-                <!-- Content loaded via JavaScript -->
-            </div>
-        </div>
-    </div>
-
+    <!-- CONTENT -->
     <main class="flex-1">
         <div class="mx-auto max-w-6xl px-6 py-10">
             <div th:replace="${content}"></div>
         </div>
     </main>
 
+    <!-- FOOTER -->
     <footer class="border-t border-ink/10">
-        <div class="mx-auto max-w-6xl px-6 py-6 text-sm text-ink/60 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div class="mx-auto max-w-6xl px-6 py-6 text-sm text-ink/60
+                    flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <span>Powered by Spring Boot and Thymeleaf</span>
             <span>UI uses REST endpoints only</span>
         </div>
     </footer>
+
 </div>
+
 <script src="/app.js"></script>
 </body>
 </html>

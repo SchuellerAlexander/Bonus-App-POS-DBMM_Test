@@ -91,6 +91,7 @@
                 <p class="mt-2 text-sm text-ink/60" th:text="${reward.description}">Description</p>
 
                 <form class="mt-6 space-y-3" action="/rewards/redeem" method="post" data-loading>
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                     <input type="hidden" name="rewardId" th:value="${reward.id}">
                     <input type="hidden" name="restaurantId" th:value="${selectedRestaurantId}">
                     <div class="flex flex-col gap-2">

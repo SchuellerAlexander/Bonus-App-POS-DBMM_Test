@@ -18,6 +18,7 @@
         </div>
 
         <form class="mt-6 grid gap-4 md:grid-cols-2" action="/purchase" method="post" data-loading>
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <div class="flex flex-col gap-2">
                 <label class="text-xs uppercase tracking-[0.2em] text-ink/60" for="restaurantId">Restaurant</label>
                 <select class="input" id="restaurantId" name="restaurantId" required>
