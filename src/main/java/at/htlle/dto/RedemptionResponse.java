@@ -1,6 +1,5 @@
 package at.htlle.dto;
 
-import at.htlle.entity.Redemption;
 import java.time.Instant;
 
 public record RedemptionResponse(
@@ -8,9 +7,10 @@ public record RedemptionResponse(
         Long accountId,
         Long rewardId,
         Long restaurantId,
-        Long ledgerEntryId,
+        String redemptionCode,
+        boolean redeemed,
         Long pointsSpent,
         Long balanceAfter,
-        Redemption.Status status,
+        Instant createdAt,
         Instant redeemedAt) {
 }
