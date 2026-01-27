@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -27,26 +29,26 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            AuthenticationSuccessHandler authenticationSuccessHandler
+            AuthenticationSuccessHandler authenticationSuccessHandler,
+            Environment environment
     ) throws Exception {
+        boolean devProfileActive = environment.acceptsProfiles(Profiles.of("dev"));
 
         http
             // CSRF
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers(PathRequest.toH2Console())
-            )
+            .csrf(csrf -> {
+                if (devProfileActive) {
+                    csrf.ignoringRequestMatchers(PathRequest.toH2Console());
+                }
+            })
 
             // Authorisierung
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(PathRequest.toH2Console()).permitAll()
                 .requestMatchers("/login", "/signup", "/css/**", "/js/**", "/images/**").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/dashboard", "/purchase", "/rewards", "/api/**").hasRole("USER")
                 .anyRequest().authenticated()
             )
-
-            // H2 Console
-            .headers(headers -> headers.frameOptions(frame -> frame.disable()))
 
             .httpBasic(AbstractHttpConfigurer::disable)
 
@@ -68,6 +70,11 @@ public class SecurityConfig {
                 .logoutSuccessUrl("/login?logout")
                 .permitAll()
             );
+
+        if (devProfileActive) {
+            http.headers(headers -> headers.frameOptions(frame -> frame.disable()))
+                .authorizeHttpRequests(auth -> auth.requestMatchers(PathRequest.toH2Console()).permitAll());
+        }
 
         return http.build();
     }

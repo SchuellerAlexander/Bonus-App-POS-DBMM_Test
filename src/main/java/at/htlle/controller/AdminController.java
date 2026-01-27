@@ -328,12 +328,41 @@ public class AdminController {
 
     private void loadAdminData(Model model) {
         List<Restaurant> restaurants = restaurantRepository.findAll().stream()
+                .filter(restaurant -> {
+                    if (restaurant == null) {
+                        logger.warn("Skipping null restaurant in admin data load");
+                        return false;
+                    }
+                    return true;
+                })
                 .sorted(Comparator.comparing(Restaurant::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
         List<Branch> branches = branchRepository.findAll().stream()
+                .filter(branch -> {
+                    if (branch == null) {
+                        logger.warn("Skipping null branch in admin data load");
+                        return false;
+                    }
+                    if (branch.getRestaurant() == null || branch.getRestaurant().getId() == null) {
+                        logger.warn("Skipping branch with missing restaurant. branchId={}", branch.getId());
+                        return false;
+                    }
+                    return true;
+                })
                 .sorted(Comparator.comparing(Branch::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
         List<Reward> rewards = rewardRepository.findAll().stream()
+                .filter(reward -> {
+                    if (reward == null) {
+                        logger.warn("Skipping null reward in admin data load");
+                        return false;
+                    }
+                    if (reward.getRestaurant() == null || reward.getRestaurant().getId() == null) {
+                        logger.warn("Skipping reward with missing restaurant. rewardId={}", reward.getId());
+                        return false;
+                    }
+                    return true;
+                })
                 .sorted(Comparator.comparing(Reward::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
 
