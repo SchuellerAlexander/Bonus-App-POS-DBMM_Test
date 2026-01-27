@@ -1,3 +1,6 @@
 at\htlle\BonusAppPosdbmmApplicationTests.class
 at\htlle\service\LoyaltyServiceIntegrationTest.class
+at\htlle\service\RewardRedemptionCodeGeneratorTest.class
+at\htlle\service\RewardRedemptionFlowTest.class
+at\htlle\controller\AdminBranchIntegrationTest.class
 at\htlle\service\PointCalculatorTest.class
