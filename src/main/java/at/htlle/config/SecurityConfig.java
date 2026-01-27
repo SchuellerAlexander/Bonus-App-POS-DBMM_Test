@@ -85,10 +85,11 @@ public class SecurityConfig {
                 Set<String> roles = AuthorityUtils.authorityListToSet(authentication.getAuthorities());
                 String username = authentication.getName();
 
-                authService.resolveAccountId(username)
-                        .ifPresent(accountId ->
-                                request.getSession(true).setAttribute("accountId", accountId)
-                        );
+                if (roles.contains("ROLE_USER")) {
+                    Long accountId = authService.resolveAccountId(username)
+                            .orElseThrow(() -> new IllegalStateException("No loyalty account available for user"));
+                    request.getSession(true).setAttribute("accountId", accountId);
+                }
 
                 if (roles.contains("ROLE_ADMIN")) {
                     response.sendRedirect("/admin");
