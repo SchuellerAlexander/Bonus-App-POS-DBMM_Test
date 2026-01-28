@@ -29,12 +29,10 @@ public class SessionAccountResolver {
                 || authentication instanceof AnonymousAuthenticationToken) {
             return null;
         }
-        return authService.resolveAccountId(authentication.getName())
-                .map(resolved -> {
-                    request.getSession(true).setAttribute("accountId", resolved);
-                    return resolved;
-                })
-                .orElse(null);
+        Long resolved = authService.resolveAccountId(authentication.getName())
+                .orElseThrow(() -> new IllegalStateException("No loyalty account resolved for user"));
+        request.getSession(true).setAttribute("accountId", resolved);
+        return resolved;
     }
 
     public void setAccountId(HttpServletRequest request, Long accountId) {

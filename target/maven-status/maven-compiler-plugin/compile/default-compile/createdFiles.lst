@@ -5,6 +5,7 @@ at\htlle\repository\PointLedgerRepository.class
 at\htlle\repository\LoyaltyAccountRepository.class
 at\htlle\BonusAppPosdbmmApplication.class
 at\htlle\entity\PointRule.class
+at\htlle\service\AccountQueryService.class
 at\htlle\dto\RedemptionRequest.class
 at\htlle\entity\LoyaltyAccount$Status.class
 at\htlle\entity\Customer$Status.class
@@ -18,11 +19,13 @@ at\htlle\service\PointCalculator$1.class
 at\htlle\entity\PointLedger.class
 at\htlle\repository\CustomerRepository.class
 at\htlle\repository\PurchaseRepository.class
+at\htlle\controller\AdminController$CustomerSummary.class
 at\htlle\dto\PurchaseRequest.class
 at\htlle\config\SecurityConfig.class
 at\htlle\repository\RewardRepository.class
 at\htlle\repository\PointRuleRepository.class
 at\htlle\controller\RestaurantController.class
+at\htlle\entity\Customer$Role.class
 at\htlle\entity\Reward$RewardType.class
 at\htlle\entity\LoyaltyAccount$Tier.class
 at\htlle\entity\Purchase.class
@@ -33,12 +36,15 @@ at\htlle\repository\BranchRepository.class
 at\htlle\entity\Reward.class
 at\htlle\controller\AuthController.class
 at\htlle\controller\PurchaseController.class
+at\htlle\service\CustomerUserDetailsService.class
 at\htlle\dto\ErrorResponse.class
 at\htlle\controller\AdminController.class
 at\htlle\entity\Branch.class
+at\htlle\service\AdminManagementService.class
 at\htlle\controller\LoyaltyController.class
 at\htlle\service\AuthService.class
 at\htlle\controller\GlobalExceptionHandler.class
+at\htlle\config\SecurityConfig$1.class
 at\htlle\util\SessionAccountResolver.class
 at\htlle\entity\Customer.class
 at\htlle\dto\RestaurantSummary.class
