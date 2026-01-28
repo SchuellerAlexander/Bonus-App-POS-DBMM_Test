@@ -71,6 +71,11 @@ public class Redemption {
     @Column(name = "points_spent", nullable = false)
     private Long pointsSpent;
 
+    @NotNull
+    @Size(max = 12)
+    @Column(name = "redemption_code", nullable = false, length = 12, unique = true, updatable = false)
+    private String redemptionCode;
+
     public Long getId() {
         return id;
     }
@@ -137,5 +142,13 @@ public class Redemption {
 
     public void setPointsSpent(Long pointsSpent) {
         this.pointsSpent = pointsSpent;
+    }
+
+    public String getRedemptionCode() {
+        return redemptionCode;
+    }
+
+    public void setRedemptionCode(String redemptionCode) {
+        this.redemptionCode = redemptionCode;
     }
 }

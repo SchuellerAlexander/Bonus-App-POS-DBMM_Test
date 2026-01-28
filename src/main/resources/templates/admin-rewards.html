@@ -96,6 +96,7 @@
                     <th class="py-2 pr-4">Kunde</th>
                     <th class="py-2 pr-4">Reward</th>
                     <th class="py-2 pr-4">Restaurant</th>
+                    <th class="py-2 pr-4">Code</th>
                     <th class="py-2 pr-4">Punkte</th>
                     <th class="py-2 pr-4">Status</th>
                 </tr>
@@ -107,6 +108,7 @@
                         th:text="${redemption.loyaltyAccount.customer.firstName + ' ' + redemption.loyaltyAccount.customer.lastName}">-</td>
                     <td class="py-3 pr-4" th:text="${redemption.reward.name}">-</td>
                     <td class="py-3 pr-4" th:text="${redemption.restaurant.name}">-</td>
+                    <td class="py-3 pr-4" th:text="${redemption.redemptionCode}">-</td>
                     <td class="py-3 pr-4" th:text="${redemption.pointsSpent}">0</td>
                     <td class="py-3 pr-4" th:text="${redemption.status}">-</td>
                 </tr>

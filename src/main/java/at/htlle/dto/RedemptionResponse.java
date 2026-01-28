@@ -5,6 +5,7 @@ import java.time.Instant;
 
 public record RedemptionResponse(
         Long redemptionId,
+        String redemptionCode,
         Long accountId,
         Long rewardId,
         Long restaurantId,

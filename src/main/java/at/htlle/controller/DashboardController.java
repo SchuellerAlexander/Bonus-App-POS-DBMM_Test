@@ -1,33 +1,26 @@
 package at.htlle.controller;
 
-import at.htlle.dto.AccountResponse;
 import at.htlle.dto.ErrorResponse;
 import at.htlle.util.SessionAccountResolver;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.http.HttpStatus;
+import at.htlle.service.AccountQueryService;
 
 @Controller
 public class DashboardController {
 
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
+    private final AccountQueryService accountQueryService;
     private final SessionAccountResolver sessionAccountResolver;
 
-    public DashboardController(RestTemplateBuilder restTemplateBuilder,
-                               ObjectMapper objectMapper,
+    public DashboardController(AccountQueryService accountQueryService,
                                SessionAccountResolver sessionAccountResolver) {
-        this.restTemplate = restTemplateBuilder.build();
-        this.objectMapper = objectMapper;
+        this.accountQueryService = accountQueryService;
         this.sessionAccountResolver = sessionAccountResolver;
     }
 
@@ -47,35 +40,32 @@ public class DashboardController {
         if (accountId == null) {
             return "redirect:/login";
         }
-        String baseUrl = baseUrl(request);
         try {
-            AccountResponse account = restTemplate.getForObject(
-                    baseUrl + "/api/accounts/{id}?includeLedger=true",
-                    AccountResponse.class,
-                    accountId);
+            var account = accountQueryService.getAccountResponse(accountId, true);
             model.addAttribute("account", account);
-        } catch (HttpStatusCodeException ex) {
-            model.addAttribute("apiError", parseError(ex, request));
-        } catch (RestClientException ex) {
-            model.addAttribute("apiError", fallbackError("Failed to load account", request.getRequestURI()));
+        } catch (RuntimeException ex) {
+            model.addAttribute("apiError", errorFromException(ex, request, "Failed to load account"));
         }
         model.addAttribute("accountId", accountId);
         return "dashboard";
     }
 
-    private String baseUrl(HttpServletRequest request) {
-        return ServletUriComponentsBuilder.fromContextPath(request).build().toUriString();
+    private ErrorResponse errorFromException(RuntimeException ex, HttpServletRequest request, String fallbackMessage) {
+        HttpStatus status = resolveStatus(ex);
+        String message = ex.getMessage() != null ? ex.getMessage() : fallbackMessage;
+        return new ErrorResponse(Instant.now(), status.value(), status.getReasonPhrase(), message, request.getRequestURI());
     }
 
-    private ErrorResponse parseError(HttpStatusCodeException ex, HttpServletRequest request) {
-        try {
-            return objectMapper.readValue(ex.getResponseBodyAsByteArray(), ErrorResponse.class);
-        } catch (Exception parseEx) {
-            return fallbackError(ex.getStatusText(), request.getRequestURI());
+    private HttpStatus resolveStatus(RuntimeException ex) {
+        if (ex instanceof EntityNotFoundException) {
+            return HttpStatus.NOT_FOUND;
         }
-    }
-
-    private ErrorResponse fallbackError(String message, String path) {
-        return new ErrorResponse(Instant.now(), 500, "Internal Server Error", message, path);
+        if (ex instanceof IllegalArgumentException) {
+            return HttpStatus.BAD_REQUEST;
+        }
+        if (ex instanceof IllegalStateException) {
+            return HttpStatus.CONFLICT;
+        }
+        return HttpStatus.INTERNAL_SERVER_ERROR;
     }
 }
