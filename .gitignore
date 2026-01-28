@@ -1,33 +1,59 @@
-# Compiled class file
+# ===============================
+# Java / Maven
+# ===============================
+
+# Compiled class files
 *.class
 
-# Log file
+# Build output
+/target/
+
+# Maven internal files
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+
+# ===============================
+# Logs
+# ===============================
 *.log
 
-# BlueJ files
-*.ctxt
+# JVM crash logs
+hs_err_pid*
+replay_pid*
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
+# ===============================
+# Archives / Packages
+# ===============================
 *.jar
 *.war
-*.nar
 *.ear
+*.nar
 *.zip
 *.tar.gz
 *.rar
 
-# Build output
-target/
+# ===============================
+# IDEs
+# ===============================
 
-# Local data
-data/
+# VS Code
+.vscode/
 
-# OS files
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# ===============================
+# OS
+# ===============================
 .DS_Store
+Thumbs.db
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
+# ===============================
+# Local runtime data
+# ===============================
+
+# Local H2 / app data
+/data/
+*.mv.db
+*.trace.db
