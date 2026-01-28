@@ -12,5 +12,6 @@ public record LedgerEntryResponse(
         String description,
         Long purchaseId,
         Long pointRuleId,
-        Long redemptionId) {
+        Long redemptionId,
+        String redemptionCode) {
 }
