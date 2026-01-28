@@ -54,6 +54,10 @@ public class AccountQueryService {
     }
 
     private LedgerEntryResponse toLedgerEntryResponse(PointLedger entry) {
+        String redemptionCode = null;
+        if (entry.getEntryType() == PointLedger.EntryType.REDEEM && entry.getRedemption() != null) {
+            redemptionCode = entry.getRedemption().getRedemptionCode();
+        }
         return new LedgerEntryResponse(
                 entry.getId(),
                 entry.getEntryType(),
@@ -63,6 +67,7 @@ public class AccountQueryService {
                 entry.getDescription(),
                 entry.getPurchase() != null ? entry.getPurchase().getId() : null,
                 entry.getPointRule() != null ? entry.getPointRule().getId() : null,
-                entry.getRedemption() != null ? entry.getRedemption().getId() : null);
+                entry.getRedemption() != null ? entry.getRedemption().getId() : null,
+                redemptionCode);
     }
 }
