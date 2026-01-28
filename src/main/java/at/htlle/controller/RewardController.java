@@ -1,41 +1,48 @@
 package at.htlle.controller;
 
-import at.htlle.dto.AccountResponse;
 import at.htlle.dto.ErrorResponse;
 import at.htlle.dto.RedemptionRequest;
 import at.htlle.dto.RedemptionResponse;
 import at.htlle.dto.RestaurantSummary;
 import at.htlle.dto.RewardSummary;
+import at.htlle.entity.Redemption;
+import at.htlle.entity.Restaurant;
+import at.htlle.entity.Reward;
+import at.htlle.repository.RestaurantRepository;
+import at.htlle.repository.RewardRepository;
+import at.htlle.service.AccountQueryService;
+import at.htlle.service.LoyaltyService;
 import at.htlle.util.SessionAccountResolver;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.http.HttpStatus;
 
 @Controller
 public class RewardController {
 
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
+    private final LoyaltyService loyaltyService;
+    private final AccountQueryService accountQueryService;
+    private final RestaurantRepository restaurantRepository;
+    private final RewardRepository rewardRepository;
     private final SessionAccountResolver sessionAccountResolver;
 
-    public RewardController(RestTemplateBuilder restTemplateBuilder,
-                            ObjectMapper objectMapper,
+    public RewardController(LoyaltyService loyaltyService,
+                            AccountQueryService accountQueryService,
+                            RestaurantRepository restaurantRepository,
+                            RewardRepository rewardRepository,
                             SessionAccountResolver sessionAccountResolver) {
-        this.restTemplate = restTemplateBuilder.build();
-        this.objectMapper = objectMapper;
+        this.loyaltyService = loyaltyService;
+        this.accountQueryService = accountQueryService;
+        this.restaurantRepository = restaurantRepository;
+        this.rewardRepository = rewardRepository;
         this.sessionAccountResolver = sessionAccountResolver;
     }
 
@@ -62,20 +69,23 @@ public class RewardController {
             return "redirect:/login";
         }
         RedemptionRequest payload = new RedemptionRequest(accountId, rewardId, restaurantId, notes);
-        String baseUrl = baseUrl(request);
         try {
-            RedemptionResponse response = restTemplate.postForObject(
-                    baseUrl + "/api/redemptions",
-                    payload,
-                    RedemptionResponse.class);
+            Redemption redemption = loyaltyService.redeemReward(payload);
+            RedemptionResponse response = new RedemptionResponse(
+                    redemption.getId(),
+                    redemption.getRedemptionCode(),
+                    redemption.getLoyaltyAccount().getId(),
+                    redemption.getReward().getId(),
+                    redemption.getRestaurant().getId(),
+                    redemption.getLedgerEntry().getId(),
+                    redemption.getPointsSpent(),
+                    redemption.getLedgerEntry().getBalanceAfter(),
+                    redemption.getStatus(),
+                    redemption.getRedeemedAt());
             loadRewardsPage(accountId, restaurantId, model, request, null, response);
             return "rewards";
-        } catch (HttpStatusCodeException ex) {
-            ErrorResponse errorResponse = parseError(ex, request);
-            loadRewardsPage(accountId, restaurantId, model, request, errorResponse, null);
-            return "rewards";
-        } catch (RestClientException ex) {
-            ErrorResponse errorResponse = fallbackError("Failed to redeem reward", request.getRequestURI());
+        } catch (RuntimeException ex) {
+            ErrorResponse errorResponse = errorFromException(ex, request, "Failed to redeem reward");
             loadRewardsPage(accountId, restaurantId, model, request, errorResponse, null);
             return "rewards";
         }
@@ -87,24 +97,18 @@ public class RewardController {
                                  HttpServletRequest request,
                                  ErrorResponse errorResponse,
                                  RedemptionResponse redemptionResponse) {
-        String baseUrl = baseUrl(request);
         try {
-            AccountResponse account = restTemplate.getForObject(
-                    baseUrl + "/api/accounts/{id}?includeLedger=false",
-                    AccountResponse.class,
-                    accountId);
+            var account = accountQueryService.getAccountResponse(accountId, false);
             model.addAttribute("account", account);
             if (restaurantId == null && account != null) {
                 restaurantId = account.restaurantId();
             }
-        } catch (HttpStatusCodeException ex) {
-            model.addAttribute("apiError", parseError(ex, request));
-        } catch (RestClientException ex) {
-            model.addAttribute("apiError", fallbackError("Failed to load account", request.getRequestURI()));
+        } catch (RuntimeException ex) {
+            model.addAttribute("apiError", errorFromException(ex, request, "Failed to load account"));
         }
         model.addAttribute("accountId", accountId);
 
-        List<RestaurantSummary> restaurants = fetchRestaurants(baseUrl);
+        List<RestaurantSummary> restaurants = fetchRestaurants();
         model.addAttribute("restaurants", restaurants);
         if (restaurantId == null && restaurants.size() == 1) {
             restaurantId = restaurants.get(0).id();
@@ -113,7 +117,7 @@ public class RewardController {
 
         List<RewardSummary> rewards = List.of();
         if (restaurantId != null) {
-            rewards = fetchRewards(baseUrl, restaurantId);
+            rewards = fetchRewards(restaurantId);
         }
         model.addAttribute("rewards", rewards);
 
@@ -125,50 +129,51 @@ public class RewardController {
         }
     }
 
-    private String baseUrl(HttpServletRequest request) {
-        return ServletUriComponentsBuilder.fromContextPath(request).build().toUriString();
+    private List<RestaurantSummary> fetchRestaurants() {
+        return restaurantRepository.findByActiveTrue().stream()
+                .map(this::toSummary)
+                .sorted(Comparator.comparing(RestaurantSummary::name, Comparator.nullsLast(String::compareToIgnoreCase)))
+                .toList();
     }
 
-    private ErrorResponse parseError(HttpStatusCodeException ex, HttpServletRequest request) {
-        try {
-            return objectMapper.readValue(ex.getResponseBodyAsByteArray(), ErrorResponse.class);
-        } catch (Exception parseEx) {
-            return fallbackError(ex.getStatusText(), request.getRequestURI());
+    private List<RewardSummary> fetchRewards(Long restaurantId) {
+        return rewardRepository.findByRestaurantIdAndActiveTrue(restaurantId).stream()
+                .map(this::toRewardSummary)
+                .toList();
+    }
+
+    private RestaurantSummary toSummary(Restaurant restaurant) {
+        return new RestaurantSummary(
+                restaurant.getId(),
+                restaurant.getName(),
+                restaurant.getCode(),
+                restaurant.getDefaultCurrency());
+    }
+
+    private RewardSummary toRewardSummary(Reward reward) {
+        return new RewardSummary(
+                reward.getId(),
+                reward.getName(),
+                reward.getDescription(),
+                reward.getCostPoints());
+    }
+
+    private ErrorResponse errorFromException(RuntimeException ex, HttpServletRequest request, String fallbackMessage) {
+        HttpStatus status = resolveStatus(ex);
+        String message = ex.getMessage() != null ? ex.getMessage() : fallbackMessage;
+        return new ErrorResponse(Instant.now(), status.value(), status.getReasonPhrase(), message, request.getRequestURI());
+    }
+
+    private HttpStatus resolveStatus(RuntimeException ex) {
+        if (ex instanceof EntityNotFoundException) {
+            return HttpStatus.NOT_FOUND;
         }
-    }
-
-    private ErrorResponse fallbackError(String message, String path) {
-        return new ErrorResponse(Instant.now(), 500, "Internal Server Error", message, path);
-    }
-
-    private List<RestaurantSummary> fetchRestaurants(String baseUrl) {
-        try {
-            RestaurantSummary[] response = restTemplate.getForObject(
-                    baseUrl + "/api/restaurants",
-                    RestaurantSummary[].class);
-            if (response == null) {
-                return List.of();
-            }
-            return Arrays.stream(response)
-                    .sorted(Comparator.comparing(RestaurantSummary::name, Comparator.nullsLast(String::compareToIgnoreCase)))
-                    .toList();
-        } catch (RestClientException ex) {
-            return List.of();
+        if (ex instanceof IllegalArgumentException) {
+            return HttpStatus.BAD_REQUEST;
         }
-    }
-
-    private List<RewardSummary> fetchRewards(String baseUrl, Long restaurantId) {
-        try {
-            RewardSummary[] response = restTemplate.getForObject(
-                    baseUrl + "/api/restaurants/{id}/rewards",
-                    RewardSummary[].class,
-                    restaurantId);
-            if (response == null) {
-                return List.of();
-            }
-            return Arrays.asList(response);
-        } catch (RestClientException ex) {
-            return List.of();
+        if (ex instanceof IllegalStateException) {
+            return HttpStatus.CONFLICT;
         }
+        return HttpStatus.INTERNAL_SERVER_ERROR;
     }
 }
