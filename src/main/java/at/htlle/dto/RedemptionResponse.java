@@ -10,6 +10,7 @@ public record RedemptionResponse(
         Long restaurantId,
         Long ledgerEntryId,
         Long pointsSpent,
+        String redemptionCode,
         Long balanceAfter,
         Redemption.Status status,
         Instant redeemedAt) {
