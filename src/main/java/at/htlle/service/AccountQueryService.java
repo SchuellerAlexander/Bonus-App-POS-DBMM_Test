@@ -32,7 +32,7 @@ public class AccountQueryService {
     public AccountResponse buildAccountResponse(LoyaltyAccount account, boolean includeLedger) {
         List<LedgerEntryResponse> ledgerEntries = null;
         if (includeLedger) {
-            ledgerEntries = pointLedgerRepository.findByLoyaltyAccountIdOrderByOccurredAtDesc(account.getId())
+            ledgerEntries = pointLedgerRepository.findDetailedByAccountIdOrderByOccurredAtDesc(account.getId())
                     .stream()
                     .map(this::toLedgerEntryResponse)
                     .collect(Collectors.toList());

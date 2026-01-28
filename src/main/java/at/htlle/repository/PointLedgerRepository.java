@@ -18,6 +18,10 @@ public interface PointLedgerRepository extends JpaRepository<PointLedger, Long> 
 
     List<PointLedger> findByLoyaltyAccountIdOrderByOccurredAtDesc(Long accountId);
 
+    @Query("select pl from PointLedger pl left join fetch pl.redemption "
+            + "where pl.loyaltyAccount.id = :accountId order by pl.occurredAt desc, pl.id desc")
+    List<PointLedger> findDetailedByAccountIdOrderByOccurredAtDesc(@Param("accountId") Long accountId);
+
     @Query(value = "select balance_after from point_ledger where loyalty_account_id = :accountId order by occurred_at desc, id desc limit 1",
             nativeQuery = true)
     Optional<Long> findLastBalanceForAccount(@Param("accountId") Long accountId);
