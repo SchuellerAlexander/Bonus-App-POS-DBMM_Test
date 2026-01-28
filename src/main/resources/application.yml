@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: Bonus-App-POSDBMM
+
+  profiles:
+    default: dev
+
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        physical_naming_strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    clean-disabled: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: jdbc:h2:file:./data/bonusapp;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:h2:mem:bonusapp-test;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver

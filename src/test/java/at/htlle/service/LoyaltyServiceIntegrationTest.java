@@ -9,9 +9,10 @@ import at.htlle.entity.PointLedger;
 import at.htlle.entity.PointRule;
 import at.htlle.entity.Redemption;
 import at.htlle.entity.Reward;
-import at.htlle.repository.BranchRepository;
 import at.htlle.repository.LoyaltyAccountRepository;
 import at.htlle.repository.PointRuleRepository;
+import at.htlle.repository.PurchaseRepository;
+import at.htlle.repository.RestaurantRepository;
 import at.htlle.repository.RewardRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -19,10 +20,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 @SpringBootTest
+@ActiveProfiles("test")
 class LoyaltyServiceIntegrationTest {
 
     @Autowired
@@ -38,7 +41,10 @@ class LoyaltyServiceIntegrationTest {
     private RewardRepository rewardRepository;
 
     @Autowired
-    private BranchRepository branchRepository;
+    private RestaurantRepository restaurantRepository;
+
+    @Autowired
+    private PurchaseRepository purchaseRepository;
 
     @Test
     void earnAndRedeemFlowShouldUpdateBalances() {
@@ -46,12 +52,15 @@ class LoyaltyServiceIntegrationTest {
                 .orElseThrow();
         PointRule rule = pointRuleRepository.findAll().stream().findFirst().orElseThrow();
         Reward reward = rewardRepository.findAll().stream().findFirst().orElseThrow();
-        Long branchId = branchRepository.findAll().stream().findFirst().map(branch -> branch.getId()).orElseThrow();
+        Long restaurantId = restaurantRepository.findAll().stream()
+                .findFirst()
+                .map(restaurant -> restaurant.getId())
+                .orElseThrow();
 
         BigDecimal amount = BigDecimal.valueOf(123.45);
         PurchaseRequest purchaseRequest = new PurchaseRequest(
                 account.getId(),
-                branchId,
+                restaurantId,
                 "PUR-" + UUID.randomUUID(),
                 amount,
                 "EUR",
@@ -66,7 +75,7 @@ class LoyaltyServiceIntegrationTest {
         assertThat(ledger.getEntryType()).isEqualTo(PointLedger.EntryType.EARN);
         assertThat(updatedAccount.getCurrentPoints()).isGreaterThanOrEqualTo(120);
 
-        RedemptionRequest redemptionRequest = new RedemptionRequest(account.getId(), reward.getId(), branchId, "Welcome Drink");
+        RedemptionRequest redemptionRequest = new RedemptionRequest(account.getId(), reward.getId(), restaurantId, "Welcome Drink");
         Redemption redemption = loyaltyService.redeemReward(redemptionRequest);
         LoyaltyAccount afterRedemption = loyaltyAccountRepository.findById(account.getId()).orElseThrow();
 
@@ -82,11 +91,42 @@ class LoyaltyServiceIntegrationTest {
         LoyaltyAccount account = loyaltyAccountRepository.findByAccountNumber("ACCT-0001")
                 .orElseThrow();
         Reward reward = rewardRepository.findAll().stream().findFirst().orElseThrow();
-        Long branchId = branchRepository.findAll().stream().findFirst().map(branch -> branch.getId()).orElseThrow();
+        Long restaurantId = restaurantRepository.findAll().stream()
+                .findFirst()
+                .map(restaurant -> restaurant.getId())
+                .orElseThrow();
 
-        RedemptionRequest redemptionRequest = new RedemptionRequest(account.getId(), reward.getId(), branchId, "Test");
+        RedemptionRequest redemptionRequest = new RedemptionRequest(account.getId(), reward.getId(), restaurantId, "Test");
 
         org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () ->
                 loyaltyService.redeemReward(redemptionRequest));
+    }
+
+    @Test
+    void purchaseShouldBeVisibleInAdminQueries() {
+        LoyaltyAccount account = loyaltyAccountRepository.findByAccountNumber("ACCT-0001")
+                .orElseThrow();
+        PointRule rule = pointRuleRepository.findAll().stream().findFirst().orElseThrow();
+        Long restaurantId = restaurantRepository.findAll().stream()
+                .findFirst()
+                .map(restaurant -> restaurant.getId())
+                .orElseThrow();
+
+        String purchaseNumber = "PUR-" + UUID.randomUUID();
+        PurchaseRequest purchaseRequest = new PurchaseRequest(
+                account.getId(),
+                restaurantId,
+                purchaseNumber,
+                BigDecimal.valueOf(45.50),
+                "EUR",
+                Instant.now(),
+                "Dinner",
+                "Admin visibility test",
+                rule.getId());
+
+        loyaltyService.recordPurchase(purchaseRequest);
+
+        assertThat(purchaseRepository.findAllByOrderByPurchasedAtDesc())
+                .anyMatch(purchase -> purchaseNumber.equals(purchase.getPurchaseNumber()));
     }
 }
