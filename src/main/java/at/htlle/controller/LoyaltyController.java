@@ -74,6 +74,7 @@ public class LoyaltyController {
                 redemption.getRestaurant().getId(),
                 ledger.getId(),
                 redemption.getPointsSpent(),
+                redemption.getRedemptionCode(),
                 ledger.getBalanceAfter(),
                 redemption.getStatus(),
                 redemption.getRedeemedAt());
