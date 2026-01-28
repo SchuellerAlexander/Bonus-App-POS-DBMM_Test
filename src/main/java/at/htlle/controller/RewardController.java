@@ -78,6 +78,7 @@ public class RewardController {
                     redemption.getRestaurant().getId(),
                     redemption.getLedgerEntry().getId(),
                     redemption.getPointsSpent(),
+                    redemption.getRedemptionCode(),
                     redemption.getLedgerEntry().getBalanceAfter(),
                     redemption.getStatus(),
                     redemption.getRedeemedAt());

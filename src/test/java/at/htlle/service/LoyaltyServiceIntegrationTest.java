@@ -80,6 +80,9 @@ class LoyaltyServiceIntegrationTest {
         LoyaltyAccount afterRedemption = loyaltyAccountRepository.findById(account.getId()).orElseThrow();
 
         assertThat(redemption.getPointsSpent()).isEqualTo(reward.getCostPoints().longValue());
+        assertThat(redemption.getRedemptionCode())
+                .isNotBlank()
+                .matches("^[A-Z0-9]{8,12}$");
         assertThat(afterRedemption.getCurrentPoints()).isEqualTo(ledger.getBalanceAfter() - reward.getCostPoints());
 
         LoyaltyAccount synced = loyaltyService.synchronizeBalance(account.getId());

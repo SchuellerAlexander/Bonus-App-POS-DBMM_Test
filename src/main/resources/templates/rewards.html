@@ -58,6 +58,7 @@
     <div th:if="${redemptionSuccess != null}" class="card p-4 border border-emerald-200 bg-emerald-50 text-emerald-900 reveal">
         <div class="font-semibold">Reward redeemed successfully</div>
         <div class="text-sm">Balance after redemption: <span class="font-semibold" th:text="${redemptionSuccess.balanceAfter}">0</span></div>
+        <div class="text-sm">Redemption code: <span class="font-semibold" th:text="${redemptionSuccess.redemptionCode}">-</span></div>
     </div>
 
     <div class="card p-6 reveal">

@@ -8,7 +8,7 @@ import at.htlle.entity.Customer;
 import at.htlle.entity.LoyaltyAccount;
 import at.htlle.entity.PointLedger;
 import at.htlle.entity.Purchase;
-import at.htlle.entity.Redemption;
+import at.htlle.dto.AdminRedemptionSummary;
 import at.htlle.repository.BranchRepository;
 import at.htlle.repository.CustomerRepository;
 import at.htlle.repository.LoyaltyAccountRepository;
@@ -162,7 +162,16 @@ public class AdminController {
         List<Restaurant> restaurants = restaurantRepository.findAll().stream()
                 .sorted(Comparator.comparing(Restaurant::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
-        List<Redemption> redemptions = redemptionRepository.findAllByOrderByRedeemedAtDesc();
+        List<AdminRedemptionSummary> redemptions = redemptionRepository.findAllByOrderByRedeemedAtDesc().stream()
+                .map(redemption -> new AdminRedemptionSummary(
+                        redemption.getRedemptionCode(),
+                        redemption.getLoyaltyAccount().getCustomer().getEmail(),
+                        redemption.getReward().getName(),
+                        redemption.getRestaurant().getName(),
+                        redemption.getPointsSpent(),
+                        redemption.getStatus(),
+                        redemption.getRedeemedAt()))
+                .toList();
         model.addAttribute("rewards", rewards);
         model.addAttribute("restaurants", restaurants);
         model.addAttribute("redemptions", redemptions);
