@@ -7,7 +7,7 @@ import at.htlle.repository.CustomerRepository;
 import at.htlle.repository.LoyaltyAccountRepository;
 import at.htlle.repository.RestaurantRepository;
 import jakarta.persistence.EntityNotFoundException;
-import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -69,17 +69,16 @@ public class AuthService {
         if (!StringUtils.hasText(username)) {
             return Optional.empty();
         }
-        return customerRepository.findByUsername(username.trim())
-                .flatMap(this::resolvePrimaryAccount)
-                .map(LoyaltyAccount::getId);
-    }
-
-    private Optional<LoyaltyAccount> resolvePrimaryAccount(Customer customer) {
-        Restaurant restaurant = restaurantRepository.findByCode("DEMO")
-                .orElseThrow(() -> new EntityNotFoundException("Restaurant not found"));
-        return loyaltyAccountRepository.findByCustomerIdAndRestaurantId(customer.getId(), restaurant.getId())
-                .or(() -> customer.getLoyaltyAccounts().stream()
-                        .min(Comparator.comparing(LoyaltyAccount::getId)));
+        Customer customer = customerRepository.findByUsername(username.trim())
+                .orElseThrow(() -> new EntityNotFoundException("Customer not found for username"));
+        List<LoyaltyAccount> accounts = loyaltyAccountRepository.findByCustomerIdOrderByIdAsc(customer.getId());
+        if (accounts.isEmpty()) {
+            throw new IllegalStateException("No loyalty account found for customer " + customer.getId());
+        }
+        if (accounts.size() > 1) {
+            throw new IllegalStateException("Multiple loyalty accounts found for customer " + customer.getId());
+        }
+        return Optional.of(accounts.get(0).getId());
     }
 
     private String buildAccountNumber(Long customerId) {

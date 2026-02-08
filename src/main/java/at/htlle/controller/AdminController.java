@@ -24,7 +24,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -41,6 +42,7 @@ public class AdminController {
 
     private static final String DEFAULT_POINT_RULE_NAME = "Default Points";
     private static final String FIXED_ADMIN_USERNAME = "admin";
+    private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
 
     private final RestaurantRepository restaurantRepository;
     private final BranchRepository branchRepository;
@@ -326,19 +328,65 @@ public class AdminController {
 
     private void loadAdminData(Model model) {
         List<Restaurant> restaurants = restaurantRepository.findAll().stream()
+                .filter(restaurant -> {
+                    if (restaurant == null) {
+                        logger.warn("Skipping null restaurant in admin data load");
+                        return false;
+                    }
+                    return true;
+                })
                 .sorted(Comparator.comparing(Restaurant::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
         List<Branch> branches = branchRepository.findAll().stream()
+                .filter(branch -> {
+                    if (branch == null) {
+                        logger.warn("Skipping null branch in admin data load");
+                        return false;
+                    }
+                    if (branch.getRestaurant() == null || branch.getRestaurant().getId() == null) {
+                        logger.warn("Skipping branch with missing restaurant. branchId={}", branch.getId());
+                        return false;
+                    }
+                    return true;
+                })
                 .sorted(Comparator.comparing(Branch::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
         List<Reward> rewards = rewardRepository.findAll().stream()
+                .filter(reward -> {
+                    if (reward == null) {
+                        logger.warn("Skipping null reward in admin data load");
+                        return false;
+                    }
+                    if (reward.getRestaurant() == null || reward.getRestaurant().getId() == null) {
+                        logger.warn("Skipping reward with missing restaurant. rewardId={}", reward.getId());
+                        return false;
+                    }
+                    return true;
+                })
                 .sorted(Comparator.comparing(Reward::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
 
-        Map<Long, PointRule> defaultRules = restaurants.stream()
-                .collect(Collectors.toMap(Restaurant::getId, restaurant -> pointRuleRepository
-                        .findByRestaurantIdAndName(restaurant.getId(), DEFAULT_POINT_RULE_NAME)
-                        .orElse(null)));
+        Map<Long, PointRule> defaultRules = new java.util.HashMap<>();
+        for (Restaurant restaurant : restaurants) {
+            if (restaurant == null) {
+                logger.warn("Skipping null restaurant when building default point rules");
+                continue;
+            }
+            Long restaurantId = restaurant.getId();
+            if (restaurantId == null) {
+                logger.warn("Skipping restaurant with null id when building default point rules. name={}",
+                        restaurant.getName());
+                continue;
+            }
+            PointRule rule = pointRuleRepository
+                    .findByRestaurantIdAndName(restaurantId, DEFAULT_POINT_RULE_NAME)
+                    .orElse(null);
+            if (defaultRules.containsKey(restaurantId)) {
+                logger.warn("Duplicate restaurant id {} when building default point rules", restaurantId);
+                continue;
+            }
+            defaultRules.put(restaurantId, rule);
+        }
 
         model.addAttribute("restaurants", restaurants);
         model.addAttribute("branches", branches);

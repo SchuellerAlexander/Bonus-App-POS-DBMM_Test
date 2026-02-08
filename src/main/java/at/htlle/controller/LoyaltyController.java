@@ -1,24 +1,20 @@
 package at.htlle.controller;
 
 import at.htlle.dto.AccountResponse;
-import at.htlle.dto.LedgerEntryResponse;
 import at.htlle.dto.PurchaseRequest;
 import at.htlle.dto.PurchaseResponse;
 import at.htlle.dto.PurchaseDetailsResponse;
 import at.htlle.dto.RedemptionRequest;
 import at.htlle.dto.RedemptionResponse;
-import at.htlle.entity.LoyaltyAccount;
 import at.htlle.entity.PointLedger;
 import at.htlle.entity.Purchase;
 import at.htlle.entity.Redemption;
-import at.htlle.repository.LoyaltyAccountRepository;
 import at.htlle.repository.PointLedgerRepository;
+import at.htlle.service.AccountQueryService;
 import at.htlle.service.LoyaltyService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,16 +30,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class LoyaltyController {
 
     private final LoyaltyService loyaltyService;
-    private final LoyaltyAccountRepository loyaltyAccountRepository;
     private final PointLedgerRepository pointLedgerRepository;
+    private final AccountQueryService accountQueryService;
 
     public LoyaltyController(
             LoyaltyService loyaltyService,
-            LoyaltyAccountRepository loyaltyAccountRepository,
-            PointLedgerRepository pointLedgerRepository) {
+            PointLedgerRepository pointLedgerRepository,
+            AccountQueryService accountQueryService) {
         this.loyaltyService = loyaltyService;
-        this.loyaltyAccountRepository = loyaltyAccountRepository;
         this.pointLedgerRepository = pointLedgerRepository;
+        this.accountQueryService = accountQueryService;
     }
 
     @PostMapping("/purchases")
@@ -73,6 +69,7 @@ public class LoyaltyController {
 
         RedemptionResponse response = new RedemptionResponse(
                 redemption.getId(),
+                redemption.getRedemptionCode(),
                 redemption.getLoyaltyAccount().getId(),
                 redemption.getReward().getId(),
                 redemption.getRestaurant().getId(),
@@ -88,16 +85,15 @@ public class LoyaltyController {
     @PostMapping("/accounts/{id}/sync")
     public AccountResponse synchronizeBalance(@PathVariable("id") Long accountId,
                                               @RequestParam(defaultValue = "false") boolean includeLedger) {
-        LoyaltyAccount account = loyaltyService.synchronizeBalance(accountId);
-        return buildAccountResponse(account, includeLedger);
+        return accountQueryService.buildAccountResponse(
+                loyaltyService.synchronizeBalance(accountId),
+                includeLedger);
     }
 
     @GetMapping("/accounts/{id}")
     public AccountResponse getAccount(@PathVariable("id") Long accountId,
                                       @RequestParam(defaultValue = "false") boolean includeLedger) {
-        LoyaltyAccount account = loyaltyAccountRepository.findById(accountId)
-                .orElseThrow(() -> new EntityNotFoundException("Account not found"));
-        return buildAccountResponse(account, includeLedger);
+        return accountQueryService.getAccountResponse(accountId, includeLedger);
     }
 
     @GetMapping("/ledger/{id}/purchase")
@@ -117,42 +113,5 @@ public class LoyaltyController {
                 purchase.getCurrency(),
                 purchase.getNotes(),
                 ledger.getDescription());
-    }
-
-    private AccountResponse buildAccountResponse(LoyaltyAccount account, boolean includeLedger) {
-        List<LedgerEntryResponse> ledgerEntries = null;
-        if (includeLedger) {
-            ledgerEntries = pointLedgerRepository.findByLoyaltyAccountIdOrderByOccurredAtDesc(account.getId())
-                    .stream()
-                    .map(this::toLedgerEntryResponse)
-                    .collect(Collectors.toList());
-        }
-
-        return new AccountResponse(
-                account.getId(),
-                account.getAccountNumber(),
-                account.getCustomer().getId(),
-                account.getCustomer().getFirstName(),
-                account.getCustomer().getLastName(),
-                account.getRestaurant().getId(),
-                account.getStatus(),
-                account.getTier(),
-                account.getCurrentPoints(),
-                account.getCreatedAt(),
-                account.getUpdatedAt(),
-                ledgerEntries);
-    }
-
-    private LedgerEntryResponse toLedgerEntryResponse(PointLedger entry) {
-        return new LedgerEntryResponse(
-                entry.getId(),
-                entry.getEntryType(),
-                entry.getPoints(),
-                entry.getBalanceAfter(),
-                entry.getOccurredAt(),
-                entry.getDescription(),
-                entry.getPurchase() != null ? entry.getPurchase().getId() : null,
-                entry.getPointRule() != null ? entry.getPointRule().getId() : null,
-                entry.getRedemption() != null ? entry.getRedemption().getId() : null);
     }
 }

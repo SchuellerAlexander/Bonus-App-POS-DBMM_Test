@@ -36,7 +36,10 @@ C:\Schule\WorkSpace\POS_DBMM\Bonus-App-POS-DBMM_Test\src\main\java\at\htlle\repo
 C:\Schule\WorkSpace\POS_DBMM\Bonus-App-POS-DBMM_Test\src\main\java\at\htlle\repository\RedemptionRepository.java
 C:\Schule\WorkSpace\POS_DBMM\Bonus-App-POS-DBMM_Test\src\main\java\at\htlle\repository\RestaurantRepository.java
 C:\Schule\WorkSpace\POS_DBMM\Bonus-App-POS-DBMM_Test\src\main\java\at\htlle\repository\RewardRepository.java
+C:\Schule\WorkSpace\POS_DBMM\Bonus-App-POS-DBMM_Test\src\main\java\at\htlle\service\AccountQueryService.java
+C:\Schule\WorkSpace\POS_DBMM\Bonus-App-POS-DBMM_Test\src\main\java\at\htlle\service\AdminManagementService.java
 C:\Schule\WorkSpace\POS_DBMM\Bonus-App-POS-DBMM_Test\src\main\java\at\htlle\service\AuthService.java
+C:\Schule\WorkSpace\POS_DBMM\Bonus-App-POS-DBMM_Test\src\main\java\at\htlle\service\CustomerUserDetailsService.java
 C:\Schule\WorkSpace\POS_DBMM\Bonus-App-POS-DBMM_Test\src\main\java\at\htlle\service\LoyaltyService.java
 C:\Schule\WorkSpace\POS_DBMM\Bonus-App-POS-DBMM_Test\src\main\java\at\htlle\service\PointCalculator.java
 C:\Schule\WorkSpace\POS_DBMM\Bonus-App-POS-DBMM_Test\src\main\java\at\htlle\util\SessionAccountResolver.java

@@ -16,6 +16,7 @@ import at.htlle.repository.PurchaseRepository;
 import at.htlle.repository.RedemptionRepository;
 import at.htlle.repository.RestaurantRepository;
 import at.htlle.repository.RewardRepository;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -31,6 +32,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class LoyaltyService {
 
+    private static final String REDEMPTION_CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final int REDEMPTION_CODE_LENGTH = 10;
+    private static final int REDEMPTION_CODE_MAX_ATTEMPTS = 10;
+
     private final LoyaltyAccountRepository loyaltyAccountRepository;
     private final PurchaseRepository purchaseRepository;
     private final PointLedgerRepository pointLedgerRepository;
@@ -39,6 +44,7 @@ public class LoyaltyService {
     private final RestaurantRepository restaurantRepository;
     private final RedemptionRepository redemptionRepository;
     private final PointCalculator pointCalculator;
+    private final SecureRandom secureRandom = new SecureRandom();
 
     public LoyaltyService(
             LoyaltyAccountRepository loyaltyAccountRepository,
@@ -188,6 +194,7 @@ public class LoyaltyService {
         redemption.setRedeemedAt(Instant.now());
         redemption.setPointsSpent(cost);
         redemption.setNotes(request.notes());
+        redemption.setRedemptionCode(generateRedemptionCode());
 
         Redemption saved = redemptionRepository.save(redemption);
         persistedLedger.setRedemption(saved);
@@ -203,5 +210,20 @@ public class LoyaltyService {
         long sum = pointLedgerRepository.sumPointsForAccount(account.getId());
         account.setCurrentPoints(sum);
         return loyaltyAccountRepository.save(account);
+    }
+
+    private String generateRedemptionCode() {
+        for (int attempt = 0; attempt < REDEMPTION_CODE_MAX_ATTEMPTS; attempt++) {
+            StringBuilder builder = new StringBuilder(REDEMPTION_CODE_LENGTH);
+            for (int i = 0; i < REDEMPTION_CODE_LENGTH; i++) {
+                int index = secureRandom.nextInt(REDEMPTION_CODE_CHARS.length());
+                builder.append(REDEMPTION_CODE_CHARS.charAt(index));
+            }
+            String code = builder.toString();
+            if (!redemptionRepository.existsByRedemptionCode(code)) {
+                return code;
+            }
+        }
+        throw new IllegalStateException("Unable to generate unique redemption code");
     }
 }
